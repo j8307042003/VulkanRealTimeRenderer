@@ -1,0 +1,8 @@
+export VULKAN_SDK=/Users/pine/lib/vulkansdk-macos-1.1.130.0/macOS
+export VK_LAYER_PATH=/Users/pine/lib/vulkansdk-macos-1.1.130.0/macOS/etc/vulkan/explicit_layer.d
+export VK_ICD_FILENAMES=/Users/pine/lib/vulkansdk-macos-1.1.130.0/macOS/etc/vulkan/icd.d/MoltenVK_icd.json
+export Vulkan_LIBRARY=/Users/pine/lib/vulkansdk-macos-1.1.130.0/MoltenVK/macOS/dynamic/libMoltenVK.dylib 
+export Vulkan_INCLUDE_DIR=/Users/pine/lib/vulkansdk-macos-1.1.130.0/MoltenVK/include
+export DYLD_LIBRARY_PATH=/Users/pine/lib/vulkansdk-macos-1.1.130.0/macOS/lib
+export VK_SDK_PATH=/Users/pine/lib/vulkansdk-macos-1.1.130.0/MoltenVK/
+export PATH=/Users/pine/lib/vulkansdk-macos-1.1.130.0/macOS/bin:$PATH
