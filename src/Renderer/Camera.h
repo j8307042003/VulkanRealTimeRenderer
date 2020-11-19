@@ -13,6 +13,8 @@ public:
 
 	Transform transform;
 
+	glm::mat4 GetViewMatrix();
+
 	int GetWidth() {return view.GetWidth();}
 	int GetHeight() {return view.GetHeight();}
 	void * GetIntegrator() {return view.GetIntegrator();}

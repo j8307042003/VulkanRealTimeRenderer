@@ -9,6 +9,8 @@
 #include<cmath>
 #include "glm/gtc/quaternion.hpp"
 #include "glm/glm.hpp"
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 
 #ifndef M_PI
@@ -35,3 +37,11 @@ Camera::Camera( int width, int height, Vec3 position) :
 	//view = RenderView(width, height);
 }
 
+glm::mat4 Camera::GetViewMatrix()
+{
+	Vec3 forward = transform.TransformDir({0, 0, 1});
+	Vec3 up = transform.TransformDir({0, 1, 0});
+	glm::mat4 model = transform.modelMatrix;
+	glm::vec3 position = {transform.position.x, transform.position.y, transform.position.z};
+	return glm::lookAt(position, position + glm::vec3(forward.x, forward.y, forward.z), {up.x, up.y, up.z}); 
+}

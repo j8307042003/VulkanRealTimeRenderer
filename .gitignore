@@ -6,6 +6,7 @@ build/*
 !build/pathTracing.comp
 !build/pathTracing.spv
 !build/render.glsl
+!build/working
 src/GLFW/src/glfw.dir
 *.vcxproj
 *.sln

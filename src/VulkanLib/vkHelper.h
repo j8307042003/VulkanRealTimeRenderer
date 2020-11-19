@@ -5,13 +5,13 @@
 #include<iostream>
 #include<vector>
 #include <vulkan/vulkan.h>
+#include "VulkanInstance.h"
 #include <fstream>      // std::ifstream
 // #include <execinfo.h>
 #include <signal.h>
 #include <stdlib.h>
 // #include <unistd.h>
 #include <assert.h>
-
 
 struct BufferObject
 {
@@ -28,11 +28,14 @@ uint32_t findQueueFamilies(VkPhysicalDevice device) ;
 VkDevice CreateLogicalDevice(VkPhysicalDevice & physicalDevice, uint32_t queueFamily) ;
 VkQueue CreateQueue(VkDevice & device, uint32_t queueFamily) ;
 VkCommandPool createCommandPool(VkDevice & device, uint32_t & queueFamily) ;
-std::vector<VkCommandBuffer> AllocateCommandBuffer(VkDevice & device, VkCommandPool & commandPool, int num) ;
-VkShaderModule createShaderModule(VkDevice & device, const std::vector<char> & code) ;
+std::vector<VkCommandBuffer> AllocateCommandBuffer(const VkDevice & device, VkCommandPool & commandPool, int num) ;
+VkShaderModule createShaderModule(VkDevice & device, const std::vector<char> & code);
+VkShaderModule createShaderModule(VkDevice & device, const int & codeLen, const char * code) ;
 VkShaderModule createShaderModule(VkDevice & device, std::string & filename) ;
+VkShaderModule createShaderModule(VkDevice & device, const char * filename);
 VkPipelineShaderStageCreateInfo createShaderStageCreateInfo(const VkShaderModule & shaderModule, VkShaderStageFlagBits shaderStageFlagBits) ;
 VkDescriptorSetLayoutBinding createDescriptorSetLayoutBinding(VkDescriptorType descriptorType, int bindingNum) ;
+VkDescriptorSetLayoutBinding createDescriptorSetLayoutBinding(VkDescriptorType descriptorType, int bindingNum, VkShaderStageFlags shaderStageFlags, int descriptorCount = 1) ;
 VkDescriptorSetLayout createDescriptorSetLayout(const VkDevice & device, int bindingNum, const VkDescriptorSetLayoutBinding* pBindings) ;
 VkPipelineLayout createPipelineLayout(const VkDevice & device, int layoutCount, const VkDescriptorSetLayout * pSetLayouts) ;
 VkPipelineCache createPipelineCache(const VkDevice & device) ;
@@ -57,8 +60,16 @@ void AllocateDescriptorSets(VkDevice & device, VkDescriptorPool & descriptorPool
 VkBool32 getMemoryType(VkPhysicalDeviceMemoryProperties deviceMemoryProperties, uint32_t typeBits, VkFlags properties, uint32_t * typeInde);
 void createBuffer(const VkDevice & device, const VkPhysicalDeviceMemoryProperties & deviceMemProps, const VkBufferCreateInfo & bufCreateInfo, VkFlags usage, VkBuffer & buffer, VkDeviceMemory & deviceMem);
 VkWriteDescriptorSet createWriteDescriptorSet(const VkDescriptorSet & descriptorSet, const VkDescriptorType & descriptorType, int bufferInfoNum, const VkDescriptorBufferInfo * pBufferInfo, int binding);
+VkWriteDescriptorSet createWriteDescriptorSet(const VkDescriptorSet & descriptorSet, const VkDescriptorType & descriptorType, int bufferInfoNum, const VkDescriptorImageInfo * pImageInfo, int binding);
 VkDescriptorBufferInfo createDescriptorBufferInfo(VkBuffer & buffer, int range);
-void CopyDataToDeviceMemory(VkDevice & device, VkDeviceMemory & mem, size_t size, void * pData);
-BufferObject BuildBuffer(VkDevice & device, const VkPhysicalDeviceMemoryProperties & deviceMemProps, VkBufferUsageFlags usafeFlag, size_t size);
+VkDescriptorImageInfo createDescriptorImageInfo(const VkSampler & sampler, const VkImageView & imageView, const VkImageLayout & imageLayout);
+void CopyDataToDeviceMemory(const VkDevice & device, const VkDeviceMemory & mem, size_t size, void * pData);
+BufferObject BuildBuffer(const VkDevice & device, const VkPhysicalDeviceMemoryProperties & deviceMemProps, VkBufferUsageFlags usafeFlag, size_t size);
+BufferObject BuildBuffer(const VkDevice & device, const VkPhysicalDeviceMemoryProperties & deviceMemProps, VkBufferUsageFlags usafeFlag, size_t size, VkFlags usage);
+VkBool32 getSupportedDepthFormat(VkPhysicalDevice physicalDevice, VkFormat *depthFormat);
+void CopyToImageBuffer(VkCommandPool commandPool, VkBuffer sourceBuffer, VkImage dstImage, int width, int height);
+void transitImageLayout(VkCommandPool commandPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+void submitCommandBuffer(VkCommandBuffer commandBuffer);
+void LoadVkImage(const char * filename, const VkCommandPool & commandPool, VkImage & image, VkImageView & imageView);
 
 #endif

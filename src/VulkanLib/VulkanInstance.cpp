@@ -15,14 +15,14 @@ VkDescriptorType GetDescriptorType(ShaderAttri & attributeType) {
 using namespace VulkanLib;
 
 VulkanInstance::VulkanInstance() {
-	VulkanInstance(0, nullptr);
+	//VulkanInstance(0, nullptr);
 }
 
 VulkanInstance::VulkanInstance(int extensionCount, const char ** extensions) {
 	
   const char * names[] = {
-      "VK_LAYER_KHRONOS_validation",
       "VK_LAYER_LUNARG_standard_validation",
+      "VK_LAYER_KHRONOS_validation",
       "VK_LAYER_LUNARG_api_dump",
   };
 

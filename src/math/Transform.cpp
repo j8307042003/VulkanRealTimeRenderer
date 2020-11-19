@@ -20,6 +20,7 @@ Vec3 Transform::TransformDir(Vec3 dir) {
 	// Vec3 v3dir = {t.x, t.y, t.z};
 	// return v3dir.normalized();
 
+	UpdateMatrix();
 	glm::vec4 result = modelMatrix * glm::vec4(dir.x, dir.y, dir.z, 0);
 	return {result.x, result.y, result.z};
 }

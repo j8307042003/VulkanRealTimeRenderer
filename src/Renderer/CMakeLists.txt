@@ -1,7 +1,20 @@
 cmake_minimum_required(VERSION 3.10)
 
 project(Renderer)
-add_library(Renderer Camera.h Camera.cpp RenderView.h RenderView.cpp Renderer.h Renderer.cpp VulkanRenderer.h VulkanRenderer.cpp VkRealTimeRenderer.h VkRealTimeRenderer.cpp)
+add_library(Renderer 
+			Camera.h Camera.cpp 
+			RenderView.h RenderView.cpp 
+			Renderer.h Renderer.cpp 
+			VulkanRenderer.h VulkanRenderer.cpp 
+			VkRealTimeRenderer.h VkRealTimeRenderer.cpp 
+			VkForwardRenderer.h VkForwardRenderer.cpp 
+			Shader.h Shader.cpp
+			Model.h Model.cpp
+			VkMaterial.h VkMaterial.cpp
+			#stb_image.h 
+			vkSys.h vkSys.cpp
+			RenderData.h RenderData.cpp
+			)
 target_link_libraries(Renderer math)
 target_link_libraries(Renderer VulkanLib)
 target_link_libraries(Renderer glm)

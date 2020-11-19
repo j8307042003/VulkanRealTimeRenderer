@@ -593,6 +593,9 @@ void VkRealTimeRenderer::createRenderCommandPool()
 	VkCommandPool commandPool = createCommandPool(vulkanInstance.device, vulkanInstance.queueFamily);
 	commandBuffers = AllocateCommandBuffer(vulkanInstance.device, commandPool, swapchainFrameBuffer.size());
 
+	//tmp
+	auto buf = BuildBuffer(vulkanInstance.device, vulkanInstance.deviceMemProps, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 4 * sizeof(float));;
+
 	for (int i = 0; i < commandBuffers.size(); ++i) 
 	{
 		VkCommandBufferBeginInfo beginInfo = {};

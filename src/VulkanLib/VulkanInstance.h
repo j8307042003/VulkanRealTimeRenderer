@@ -1,4 +1,9 @@
+#ifndef VULKAN_INSTANCE_H_
+#define VULKAN_INSTANCE_H_
 #pragma once
+
+namespace VulkanLib { class VulkanInstance; }
+
 #include "vkHelper.h"
 #include <vulkan/vulkan.h>
 #include <vector>
@@ -55,4 +60,4 @@ private:
 
 };
 }
-
+#endif

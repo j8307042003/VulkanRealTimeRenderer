@@ -1,7 +1,13 @@
 #pragma once
 #include "Renderer.h"
+#include "Shader.h"
+#include "RenderData.h"
+#include "Model.h"
+#include "VkMaterial.h"
+#include "VkSys.h"
 #include "VulkanLib/vkHelper.h"
 #include "VulkanLib/VulkanInstance.h"
+#include "Camera.h"
 #include "math/Matrix4.h"
 #include "glm/gtc/matrix_transform.hpp"
 #define GL_SILENCE_DEPRECATION
@@ -9,7 +15,7 @@
 typedef unsigned int uint;
 
 
-using namespace VkEngine {
+namespace VkEngine {
 	struct FrameBuffer {
 
 	};
@@ -23,6 +29,7 @@ using namespace VkEngine {
 		VkSwapchainKHR swapchain;
 		std::vector<VkImageView> swapchainImageViews;
 		std::vector<VkFramebuffer> frameBuffers;
+		VkExtent2D swapChainExtent;
 	};
 
 	struct Swapchain {
@@ -41,7 +48,7 @@ using namespace VkEngine {
 		VkFormat format;
 		VkImage image;
 		VkImageView view;
-	}
+	};
 
 }
 
@@ -51,7 +58,11 @@ class VkForwardRenderer : public Renderer {
 		const int frameBuffer_Swapchain = 0;
 		const int frameBuffer_Color = 1;
 		const int frameBuffer_Depth = 2;
-		const int frameBuffer_Max = 3;
+		static const int frameBuffer_Max = 3;
+
+		struct forwardUbo {
+			float color[4];
+		};
 
 	private:
 		VulkanLib::VulkanInstance vulkanInstance;
@@ -61,28 +72,84 @@ class VkForwardRenderer : public Renderer {
 		VkRenderPass mainRenderPass;
 
 		std::vector<VkAttachmentDescription> attachmentDes;
-		std::vector<VkFramebuffer> frameBuffers;
 
 		VkEngine::Img colorImg;
 		VkEngine::Img depthImg;
 
-		VkPipeline graphicsPipeline;
+		VkQueue presentQueue;
+
+
+		Shader forwardShader;
+		Shader swapchainShader;
 		
+		VkPipeline graphicsPipeline;
+		VkPipeline swapchainPipeline;
+
+
+		BufferObject forwardUboBuffers;
+		BufferObject forwardSwapchainUboBuffers;
+
+		VkPipelineLayout forwardPipelineLayout;
+		VkDescriptorSet attachmentWriteDescriptorSet;
+
+		VkPipelineLayout swapchainPipelineLayout;
+		std::vector<VkDescriptorSet> swapchainDescriptorSets;
+
+		VkDescriptorPool descriptorPool;
+		VkCommandPool commandPool;
+
+		//SceneObj
+		RenderData quadObj;
+
+
+		std::vector<RenderData> customDatas;
+
+		std::vector<VkCommandBuffer> commandBuffers;
+
+
+		struct GlobalUniformData {
+			glm::mat4 mvp;
+		};
+
+		GlobalUniformData globalUniformData;
+		BufferObject globalUniformBfferObj;		
+		Camera camera;
+
+
+
+		GLfloat deltaTime = 0.0f;
+		GLfloat lastFrame = 0.0f;
+		
+		float rot_x = 0;
+		float rot_y = 0;
 
 	public:
 		VkForwardRenderer();
 		~VkForwardRenderer();
 
-		void render();
+
+		void StartRender();
+		void UpdateFrame() {}
+		void ClearImage() {}
 	private:
 
 		void initSwapchain();
 		void initWindow();
+		void initAttachment();
 		void initFrameBuffer();
 		void initRenderPass();
 		void initPipeline();
+		void initShader();
+		void initDescriptor();
+		void initBuffer();
+		void initCustomData();
+		void initCommandBuffer();
+		void initCamera();
 		void checkAndCreateVulkanInstance();
 
+		void doMovement();
+		void doRotate();
 
-		void createImg(int width, int height, VkFormat format, VkEngine::Img & img);
+
+		void createImg(int width, int height, VkFormat format, VkImageUsageFlags usage, VkEngine::Img & img);
 };
