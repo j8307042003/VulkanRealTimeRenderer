@@ -36,8 +36,9 @@ std::vector<RenderData> RenderDataUtils::LoadObj(const char * filename, VkMateri
 		for (int j = 0; j < pMesh->mNumVertices; ++j)
 		{
 			auto vertice = pMesh->mVertices[j];
+			auto normal = pMesh->mNormals[j];
 			aiVector3D * coords = &pMesh->mTextureCoords[0][j];
-			model.data[j] = { {vertice.x, vertice.y, vertice.z}, {coords->x, coords->y}, {0, 0, 0, 0} }; // vertex, uv, color
+			model.data[j] = { {vertice.x, vertice.y, vertice.z}, {coords->x, coords->y}, {0, 0, 0, 0}, {normal.x, normal.y, normal.z} }; // vertex, uv, color
 		}
 
 		int indicesNum = 0;
@@ -61,8 +62,14 @@ std::vector<RenderData> RenderDataUtils::LoadObj(const char * filename, VkMateri
 			pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &str);
 			// std::cout << "tex " << str.C_Str() << "\n";
 
+			std::string texName = (directory + '/' + std::string(str.C_Str()));
+			for(int i = 0; i < texName.size(); ++i)
+			{
+				if (texName[i] == '\\') texName[i] = '/'; 
+			}
+
 			auto & vulkanInstance = *vkSys::VkInstance::GetInstance();
-			auto tex = vkSys::TexMgr::GetTexture((directory + '/' + std::string(str.C_Str())).c_str(), commandpool);
+			auto tex = vkSys::TexMgr::GetTexture(texName.c_str(), commandpool);
 			mat.SetTexture(*tex);
 		}
 
@@ -103,7 +110,7 @@ VkMaterialProgram RenderData::buildProgram(VkDevice device, VkRenderPass renderp
     vertexBindingDescriptions[0].stride = sizeof(Model::ModelVertexData);
     vertexBindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX ;
 
-    std::array<VkVertexInputAttributeDescription, 3> vertexInputAttributeDescriptions = {};
+    std::array<VkVertexInputAttributeDescription, 4> vertexInputAttributeDescriptions = {};
 	vertexInputAttributeDescriptions[0].location = 0;
 	vertexInputAttributeDescriptions[0].binding = 0;
 	vertexInputAttributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -119,12 +126,16 @@ VkMaterialProgram RenderData::buildProgram(VkDevice device, VkRenderPass renderp
 	vertexInputAttributeDescriptions[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
 	vertexInputAttributeDescriptions[2].offset = offsetof(Model::ModelVertexData, color);
 
+	vertexInputAttributeDescriptions[3].location = 3;
+	vertexInputAttributeDescriptions[3].binding = 0;
+	vertexInputAttributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+	vertexInputAttributeDescriptions[3].offset = offsetof(Model::ModelVertexData, normal);
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
 	vertexInputInfo.pVertexBindingDescriptions = &vertexBindingDescriptions[0]; // Optional
-	vertexInputInfo.vertexAttributeDescriptionCount = 3;
+	vertexInputInfo.vertexAttributeDescriptionCount = vertexInputAttributeDescriptions.size();
 	vertexInputInfo.pVertexAttributeDescriptions = &vertexInputAttributeDescriptions[0]; // Optional
 
 

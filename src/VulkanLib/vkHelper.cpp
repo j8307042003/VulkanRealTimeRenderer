@@ -680,7 +680,7 @@ void LoadVkImage(const char * filename, const VkCommandPool & commandPool, VkIma
 
 	if (imageFileData == nullptr) 
 	{
-		throw std::runtime_error("Load Image Failed. file not found!");
+		throw std::runtime_error("Load Image Failed. file not found! " + std::string(filename));
 		return ;
 	}
 

@@ -5,7 +5,7 @@
 #include <typeinfo>
 #include <chrono>
 #include <ratio>
-#include <Windows.h>
+//#include <Windows.h>
 
 
 typedef unsigned int uint;
@@ -23,7 +23,7 @@ Vec3 make_normal(const Vec3 & v1, const Vec3 & v2, const Vec3 & v3) {
 VulkanRenderer::VulkanRenderer(VulkanLib::VulkanInstance vkInstance) {
 
 	//if (HMODULE mod = GetModuleHandleA("renderdoc.dll"))
-	if (HMODULE mod = LoadLibraryA("renderdoc.dll"))
+	//if (HMODULE mod = LoadLibraryA("renderdoc.dll"))
 	{
 		std::cout << "handle loaded" << std::endl;
 
@@ -307,7 +307,7 @@ void VulkanRenderer::InitBuffer() {
 		//3 Shape Sphere
 		BuildBuffer(device, deviceMemProps, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, sizeof(SphereShape) * kShapeInstanceSize),
 		//4 Shape Triangle
-		BuildBuffer(device, deviceMemProps, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, max(1, (int)(sizeof(TriangleShape) * kShapeInstanceSize * 3000))),
+		BuildBuffer(device, deviceMemProps, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, std::max(1, (int)(sizeof(TriangleShape) * kShapeInstanceSize * 3000))),
 		//5 Shape Plane
 		BuildBuffer(device, deviceMemProps, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, sizeof(PlaneShape) * kShapeInstanceSize),
 		//6 Material

@@ -58,8 +58,9 @@ void Model::LoadModel(const char * filename)
 			for (int j = 0; j < pMesh->mNumVertices; ++j)
 			{
 				auto vertice = pMesh->mVertices[j];
+				auto normal = pMesh->mNormals[j];
 				aiVector3D * coords = &pMesh->mTextureCoords[0][j];
-				data[vertexNum] = { {vertice.x, vertice.y, vertice.z}, {coords->x, coords->y}, {0, 0, 0, 0} }; // vertex, uv, color
+				data[vertexNum] = { {vertice.x, vertice.y, vertice.z}, {coords->x, coords->y}, {0, 0, 0, 0}, {normal.x, normal.y, normal.z} }; // vertex, uv, color
 				//data[vertexNum] = { {vertice.x, vertice.y, vertice.z}, {0, 0}, {0, 0, 0, 0} }; // vertex, uv, color
 				vertexNum++;
 			}

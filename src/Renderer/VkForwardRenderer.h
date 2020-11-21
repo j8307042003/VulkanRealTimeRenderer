@@ -4,7 +4,7 @@
 #include "RenderData.h"
 #include "Model.h"
 #include "VkMaterial.h"
-#include "VkSys.h"
+#include "vkSys.h"
 #include "VulkanLib/vkHelper.h"
 #include "VulkanLib/VulkanInstance.h"
 #include "Camera.h"
@@ -109,6 +109,9 @@ class VkForwardRenderer : public Renderer {
 
 		struct GlobalUniformData {
 			glm::mat4 mvp;
+			glm::vec4 cameraPos;
+			glm::vec4 directionalLightDir;
+			glm::vec4 directionalLightColor;
 		};
 
 		GlobalUniformData globalUniformData;

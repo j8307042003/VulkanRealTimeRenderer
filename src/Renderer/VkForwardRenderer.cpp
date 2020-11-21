@@ -9,10 +9,11 @@
 #define GL_SILENCE_DEPRECATION
 #include "GLFW/include/GLFW/glfw3.h"
 #include <GLFW/glfw3.h>
-#include "glm\glm.hpp"
+#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <array>
 
 
@@ -276,12 +277,11 @@ VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& avai
 }
 
 VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, int width, int height) {
-	if (capabilities.currentExtent.width != UINT32_MAX) {
+	if (capabilities.currentExtent.width != UINT32_MAX && false) {
 		return capabilities.currentExtent;
 	}
 	else {
-		VkExtent2D actualExtent = { width, height };
-
+		VkExtent2D actualExtent = { (uint32_t)width, (uint32_t)height };
 		actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
 		actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
 
@@ -332,6 +332,8 @@ void VkForwardRenderer::initSwapchain()
 	windowData.surfaceFormat = chooseSwapSurfaceFormat(surfaceFormats);
 	VkPresentModeKHR presentMode = chooseSwapPresentMode(presentModes);
 	VkExtent2D extent = chooseSwapExtent(capabilities, screenSetting.x, screenSetting.y);
+	screenSetting.x = (int)extent.width;
+	screenSetting.y = (int)extent.height;
 	windowData.swapChainExtent = extent;
 	uint32_t imageCount = capabilities.minImageCount + 1;
 	if (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount) {
@@ -370,7 +372,8 @@ void VkForwardRenderer::initWindow()
 
 	VkResult vkResult = glfwCreateWindowSurface(vulkanInstance.instance, windowData.window, nullptr, &windowData.surface);
 	if (vkResult != VK_SUCCESS) {
-		throw std::runtime_error("failed to create window surface!");
+		std::cout << vkResult << std::endl;
+		throw std::runtime_error("failed to create window surface! ");
 		return;
 	}
 
@@ -726,7 +729,8 @@ void VkForwardRenderer::initCommandBuffer()
 	VkRect2D scissor = {};
 	scissor.offset = {0, 0};
 	scissor.extent = windowData.swapChainExtent;    
-
+	std::cout << scissor.extent.width << std::endl;
+	std::cout << scissor.extent.height << std::endl;
 	for (int i = 0; i < commandBuffers.size(); ++i) 
 	{
 		VkCommandBufferBeginInfo beginInfo = {};
@@ -885,11 +889,13 @@ void VkForwardRenderer::StartRender()
 		{
 			doMovement();
 			doRotate();
-
         	camera.transform.UpdateMatrix();
-			glm::mat4 projectionMatrix = glm::perspective(90.0f, (GLfloat)windowData.swapChainExtent.width / (GLfloat)windowData.swapChainExtent.height, 0.001f, 1000.0f);
+			glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), (GLfloat)windowData.swapChainExtent.width / (GLfloat)windowData.swapChainExtent.height, 0.001f, 1000.0f);
 			glm::vec3 scale = {0.01f, 0.01f, 0.01f};
+			globalUniformData.cameraPos = {camera.transform.position.x, camera.transform.position.y, camera.transform.position.z, 0.0};
 			globalUniformData.mvp = projectionMatrix * camera.GetViewMatrix() * glm::scale(glm::mat4(1), scale);
+			globalUniformData.directionalLightDir = glm::vec4(1, -1, 0, 1);
+			globalUniformData.directionalLightColor = glm::vec4(1, 1, 1, 1);
 			CopyDataToDeviceMemory(vulkanInstance.device, globalUniformBfferObj.memory, globalUniformBfferObj.size, &globalUniformData);
 		}
 
