@@ -109,6 +109,9 @@ class VkForwardRenderer : public Renderer {
 
 		struct GlobalUniformData {
 			glm::mat4 mvp;
+			glm::mat4 vp;
+			glm::mat4 projectionMatrix;
+			glm::mat4 worldToCamMatrix;
 			glm::vec4 cameraPos;
 			glm::vec4 directionalLightDir;
 			glm::vec4 directionalLightColor;

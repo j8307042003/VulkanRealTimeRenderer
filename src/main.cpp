@@ -19,7 +19,7 @@
 
 #include <GLFW/glfw3.h>
 #include <glm/gtx/quaternion.hpp>
-#include "main.h"
+//#include "main.h"
 
 #define GL_RGBA32F 0x8814
 #define GL_RGB32F 0x8815

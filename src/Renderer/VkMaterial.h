@@ -24,12 +24,33 @@ struct VkMaterialProgram {
 class VkMaterial 
 {
 public:
+	struct MatProperty
+	{
+		float ambient;
+		float diffuse;
+		float specular;
+		float shininess;
+
+		glm::vec3 specularColor;
+	};
+
+	MatProperty matProperty;
 	Shader shader;	
 
 	VkImage mainTexImg;
 	VkImageView mainTexImageView;
+	int mipmapsLevel;
+
+	VkImage specTexImg;
+	VkImageView specImageView;
+
+	VkImage normalTexImg;
+	VkImageView normalTexImageView;
+
 	void ReadMainTexture(const VulkanLib::VulkanInstance & vulkanInstance, const VkCommandPool & commandPool, const char * fileName);
 	void SetTexture(vkSys::TexMgr::Texture texture);
+	void SetSpecularTexture(vkSys::TexMgr::Texture texture);
+	void SetNormalTexture(vkSys::TexMgr::Texture texture);
 };
 
 

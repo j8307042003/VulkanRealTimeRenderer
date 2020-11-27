@@ -45,8 +45,8 @@ namespace vkSys {
 		static VkSampler samplers[SamplerMax];
 
 
-		static VkSampler GetSampler(uint32_t samplerKind);
-		static VkSampler Create2DSampler();
+		static VkSampler GetSampler(uint32_t samplerKind, int mipmaps);
+		static VkSampler Create2DSampler(int mipmaps);
 	};
 
 
@@ -57,6 +57,7 @@ namespace vkSys {
 		{
 			VkImage image;
 			VkImageView imageView;
+			int mipmapsLevel;
 		};
 
 

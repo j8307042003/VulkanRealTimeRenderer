@@ -13,6 +13,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include "glm/gtc/quaternion.hpp"
 #include <glm/gtx/string_cast.hpp>
 #include <array>
 
@@ -136,8 +137,8 @@ void VkForwardRenderer::doRotate()
 
 VkForwardRenderer::VkForwardRenderer()
 {
-	screenSetting.x = 1280;
-	screenSetting.y = 900;
+	screenSetting.x = 1920; // 1280;
+	screenSetting.y = 1080; //  900;
 
 	if (!glfwInit())
     return;
@@ -803,43 +804,118 @@ void VkForwardRenderer::initCustomData()
 	Model m = {};
 	std::vector<Model::ModelVertexData> vertexData = 
 	{
-		{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 0.0f}},
-		{{ 0.5f, -0.5f, 0.0f}, {1.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 0.0f}},
-		{{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 0.0f}},
-		{{-0.5f,  0.5f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 0.0f}},
+		//{{-10.0f, -10.0f, 10.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 0.0f}},
+		//{{ 10.0f, -10.0f, 10.0f}, {1.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 0.0f}},
+		//{{ 10.0f,  10.0f, 10.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 0.0f}},
+		//{{-10.0f,  10.0f, 10.0f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 0.0f}},
+
+		//{{-10.0f, -10.0f, -10.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 0.0f}},
+		//{{ 10.0f, -10.0f, -10.0f}, {1.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 0.0f}},
+		//{{ 10.0f,  10.0f, -10.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 0.0f}},
+		//{{-10.0f,  10.0f, -10.0f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 0.0f}},
+		
+
+		//
+		{{-1.0f, -1.0f, 1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 0.0f}},
+		{{ 1.0f, -1.0f, 1.0f}, {1.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 0.0f}},
+		{{ 1.0f,  1.0f, 1.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 0.0f}},
+		{{-1.0f,  1.0f, 1.0f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 0.0f}},
+
 	};
 
 	std::vector<uint32_t> indices = 
 	{
-		0, 1, 2, 2, 3, 0
+		0, 1, 2, 2, 3, 0, // far plane
+		//4, 0, 3, 3, 7, 4, // left plane
+		//1, 5, 6, 6, 2, 1, // right plane
+		//4, 6, 1, 1, 0, 4, // bot plane
+		//3, 2, 6, 6, 7, 3, // top plane
+		//5, 4, 7, 7, 6, 5, // back plane
 	};
 
-	//m.SetData(vertexData, indices);
-	//m.LoadModel("model/rock.obj");
-	//m.LoadModel("model/sponza.obj");
-	//quadObj.setModel(m);
+	m.SetData(vertexData, indices);
+	VkMaterial skyboxMat = {};
+	skyboxMat.shader = { vulkanInstance.device, "working/subpassForward/forwardSkybox.vert.spv", "working/subpassForward/forwardSkybox.frag.spv" };
+	skyboxMat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/MonValley_G_DirtRoad_8k.jpg");
+	//skyboxMat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/Newport_Loft_8k.jpg");
+	//skyboxMat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/PaperMill_E_8k.jpg");
+	//skyboxMat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/Topanga_Forest_B_8k.jpg");
+	
+
+	VkMaterial tmpBRDFMat = {};
+	tmpBRDFMat.shader = { vulkanInstance.device, "working/subpassForward/forwardSkybox.vert.spv", "working/subpassForward/forwardSkybox.frag.spv" };
+	tmpBRDFMat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/BRDF LUT.png");
+
 
 
 	VkMaterial mat = {};
 	mat.shader = { vulkanInstance.device, "working/subpassForward/forward.vert.spv", "working/subpassForward/forward.frag.spv" };
 	mat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/wall.jpg");
-	//mat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/87face.png");
 
-	//quadObj.setMaterial(mat);
+	//customDatas = RenderDataUtils::LoadObj("working/model/sponza.obj", mat, commandPool);
+	customDatas = RenderDataUtils::LoadObj("working/model/sponza-gltf-pbr/sponza.glb", mat, commandPool);
 
-	//quadObj.buildProgram(vulkanInstance.device, mainRenderPass, 0);	
-	//quadObj.buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo);
-
-
-	customDatas = RenderDataUtils::LoadObj("working/model/sponza.obj", mat, commandPool);
-	auto nanosuit = RenderDataUtils::LoadObj("working/model/nanosuit/nanosuit.obj", mat, commandPool);
-	//auto nanosuit = RenderDataUtils::LoadObj("model/InfiniteScan/Head.fbx", mat, commandPool);	
-	customDatas.insert(customDatas.end(), nanosuit.begin(), nanosuit.end());
-	for(int i = 0; i < customDatas.size(); ++i) 
+	for (int i = 0; i < customDatas.size(); ++i)
 	{
-		customDatas[i].buildProgram(vulkanInstance.device, mainRenderPass, 0);	
-		customDatas[i].buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo);		
+		customDatas[i].modelMatrix = glm::scale(glm::mat4(1), glm::vec3(0.01f, 0.01f, 0.01f));
+		customDatas[i].buildProgram(vulkanInstance.device, mainRenderPass, 0);
+		customDatas[i].buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView);
 	}
+
+
+	VkMaterial sphereMat = {};
+	//sphereMat.shader = { vulkanInstance.device, "working/subpassForward/forward.vert.spv", "working/subpassForward/sphere.frag.spv" };
+	sphereMat.shader = { vulkanInstance.device, "working/subpassForward/forward.vert.spv", "working/subpassForward/forward.frag.spv" };
+	//sphereMat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/Topanga_Forest_B_8k.jpg");
+	//sphereMat.ReadMainTexture(vulkanInstance, commandPool, "working/model/911GT/skin02/0000.BMP");
+	sphereMat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/white.png");
+	//sphereMat.SetSpecularTexture(*vkSys::TexMgr::GetTexture("working/texture/black.png", commandPool));
+	//sphereMat.SetSpecularTexture(*vkSys::TexMgr::GetTexture("working/texture/green.png", commandPool));
+	//sphereMat.SetSpecularTexture(*vkSys::TexMgr::GetTexture("working/texture/tmp.png", commandPool));
+	sphereMat.SetSpecularTexture(*vkSys::TexMgr::GetTexture("working/texture/blue.png", commandPool));
+	sphereMat.matProperty.diffuse = 10.0f;
+
+	//auto nanosuit = RenderDataUtils::LoadObj("working/model/nanosuit/nanosuit.obj", mat, commandPool);
+	VkMaterial gunMat = mat;
+	gunMat.SetTexture(*vkSys::TexMgr::GetTexture("working/model/Cerberus_by_Andrew_Maximov/Textures/Cerberus_A.tga", commandPool));
+	gunMat.SetNormalTexture(*vkSys::TexMgr::GetTexture("working/model/Cerberus_by_Andrew_Maximov/Textures/Cerberus_N.tga", commandPool));
+	gunMat.SetSpecularTexture(*vkSys::TexMgr::GetTexture("working/model/Cerberus_by_Andrew_Maximov/Textures/CerberusCombine.png", commandPool));
+	auto nanosuit = RenderDataUtils::LoadObj("working/model/Cerberus_by_Andrew_Maximov/Cerberus_LP.FBX", mat, commandPool);
+	//auto nanosuit = RenderDataUtils::LoadObj("working/model/dragon.obj", mat, commandPool);
+	//auto nanosuit = RenderDataUtils::LoadObj("model/InfiniteScan/Head.fbx", mat, commandPool);	
+	int begin = customDatas.size();
+	//customDatas.insert(customDatas.end(), nanosuit.begin(), nanosuit.end());
+	for(int i = begin; i < customDatas.size(); ++i)
+	{
+		customDatas[i].modelMatrix = glm::scale(glm::translate(glm::mat4(1), glm::vec3(5.0, 2.0, 0.0)) *  glm::toMat4(glm::quat(glm::radians(glm::vec3(0.0f, 90.0f, 90.0f)))), glm::vec3(0.01f, 0.01f, 0.01f));
+		customDatas[i].setMaterial(gunMat);
+		customDatas[i].buildProgram(vulkanInstance.device, mainRenderPass, 0);	
+		customDatas[i].buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView);
+	}
+
+
+
+	auto sphere = RenderDataUtils::LoadObj("working/model/sphere_.obj", sphereMat, commandPool);
+	//auto sphere = RenderDataUtils::LoadObj("working/model/pokeball/pokeball.obj", sphereMat, commandPool);
+	//auto sphere = RenderDataUtils::LoadObj("working/model/911GT/Porsche_911_GT2.obj", sphereMat, commandPool);
+	//auto sphere = RenderDataUtils::LoadObj("working/model/dragon.obj", sphereMat, commandPool);
+	for (int i = 0; i < sphere.size(); ++i)
+	{
+		sphere[i].modelMatrix = glm::scale(glm::translate(glm::mat4(1), glm::vec3(0.0f, 2.0f, 0.0f)), glm::vec3(0.1, 0.1, 0.1));
+		sphere[i].setMaterial(sphereMat);
+		sphere[i].buildProgram(vulkanInstance.device, mainRenderPass, 0);
+		sphere[i].buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView);
+	}
+	//customDatas.insert(customDatas.end(), sphere.begin(), sphere.end());
+
+
+	// skybox
+	RenderData skyboxRenderData = {};
+	skyboxRenderData.setMaterial(skyboxMat);
+	skyboxRenderData.setModel(m);
+	skyboxRenderData.buildProgram(vulkanInstance.device, mainRenderPass, 0);
+	skyboxRenderData.buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView);
+	//customDatas.push_back(skyboxRenderData);
 }
 
 
@@ -894,7 +970,11 @@ void VkForwardRenderer::StartRender()
 			glm::vec3 scale = {0.01f, 0.01f, 0.01f};
 			globalUniformData.cameraPos = {camera.transform.position.x, camera.transform.position.y, camera.transform.position.z, 0.0};
 			globalUniformData.mvp = projectionMatrix * camera.GetViewMatrix() * glm::scale(glm::mat4(1), scale);
-			globalUniformData.directionalLightDir = glm::vec4(1, -1, 0, 1);
+			globalUniformData.vp = projectionMatrix * camera.GetViewMatrix();
+			globalUniformData.projectionMatrix = projectionMatrix;
+			globalUniformData.worldToCamMatrix = camera.transform.modelMatrix;
+			globalUniformData.worldToCamMatrix = camera.GetViewMatrix();
+			globalUniformData.directionalLightDir = glm::vec4(1, -1, 1, 1);
 			globalUniformData.directionalLightColor = glm::vec4(1, 1, 1, 1);
 			CopyDataToDeviceMemory(vulkanInstance.device, globalUniformBfferObj.memory, globalUniformBfferObj.size, &globalUniformData);
 		}

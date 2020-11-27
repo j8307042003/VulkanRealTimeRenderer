@@ -24,10 +24,12 @@ class RenderData {
 	BufferObject customUboBufferObj;
 	VkDescriptorSet descriptorSet;
 public:
+	glm::mat4 modelMatrix;
+
 	RenderData();
 	void setModel(Model & model);
 	void setMaterial(VkMaterial & mat);
-	void buildRenderData(VkDevice & device, const VkPhysicalDeviceMemoryProperties & deviceMemProps, VkDescriptorPool descriptorPool, VkDescriptorBufferInfo globalUniformBufInfo);
+	void buildRenderData(VkDevice & device, const VkPhysicalDeviceMemoryProperties & deviceMemProps, VkDescriptorPool descriptorPool, VkDescriptorBufferInfo globalUniformBufInfo, VkImageView GIImageView, VkImageView BRDFLUTImageView);
 	void render(VkCommandBuffer & commandBuffer);
 	VkMaterialProgram buildProgram(VkDevice device, VkRenderPass renderpass, int subpass);
 };

@@ -7,11 +7,13 @@ VkSampler vkSys::Sampler::samplers[SamplerMax];
 std::map<std::string, vkSys::TexMgr::Texture> vkSys::TexMgr::map;
 
 
-VkSampler vkSys::Sampler::GetSampler(uint32_t samplerKind)
+VkSampler vkSys::Sampler::GetSampler(uint32_t samplerKind, int mipmaps)
 {
+	return Create2DSampler(mipmaps);
+
 	if (samplers[Sampler2D] == VK_NULL_HANDLE) 
 	{
-		samplers[Sampler2D] = Create2DSampler();
+		samplers[Sampler2D] = Create2DSampler(mipmaps);
 	}
 
 
@@ -19,7 +21,7 @@ VkSampler vkSys::Sampler::GetSampler(uint32_t samplerKind)
 }
 
 
-VkSampler vkSys::Sampler::Create2DSampler()
+VkSampler vkSys::Sampler::Create2DSampler(int mipmaps)
 {
 	auto & vulkanInstance = *VkInstance::GetInstance();
 
@@ -36,10 +38,10 @@ VkSampler vkSys::Sampler::Create2DSampler()
 	samplerInfo.unnormalizedCoordinates = VK_FALSE;
 	samplerInfo.compareEnable = VK_FALSE;
 	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 	samplerInfo.mipLodBias = 0.0f;
 	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = 0.0f;	
+	samplerInfo.maxLod = static_cast<float>(mipmaps);
 
 	VkSampler sampler = {};
 	if (vkCreateSampler(vulkanInstance.device, &samplerInfo, nullptr, &sampler) != VK_SUCCESS) {
@@ -63,7 +65,9 @@ vkSys::TexMgr::Texture * vkSys::TexMgr::GetTexture(const char * filename, const 
 	if (it == map.end())
 	{
 		Texture tex = {};
-		LoadVkImage(filename, commandPool, tex.image, tex.imageView);
+		tex.mipmapsLevel = 1;
+		//LoadVkImage(filename, commandPool, tex.image, tex.imageView);
+		LoadVkImageMipmap(filename, commandPool, tex.image, tex.imageView, tex.mipmapsLevel);
 		map[filename] = tex;
 		return &map[filename];
 	}

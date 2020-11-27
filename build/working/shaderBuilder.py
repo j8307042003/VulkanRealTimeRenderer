@@ -7,11 +7,17 @@ import os
 
 
 # set shader compiler path
-shaderCompiler = '/Users/pine/lib/vulkansdk-macos-1.1.130.0/macOS/bin/glslc'
+# shaderCompiler = '/Users/pine/lib/vulkansdk-macos-1.1.130.0/macOS/bin/glslc'
+shaderCompiler = 'D:\\programs\\VulkanSDK\\1.2.131.2\\Bin\\glslc'
 
 def BuildShaderFile(shaderBuilder, sourceFilePath, outputFileName):
-	outputPath = os.path.join(str(pathlib.Path(sourceFilePath).parent), outputFileName);
+	cwd = os.getcwd()
+	workingDir = str(pathlib.Path(sourceFilePath).parent)
+	os.chdir(workingDir)
+	outputPath = os.path.join(workingDir, outputFileName);
 	result = os.system(shaderBuilder + " " + sourceFilePath + " -o " + outputPath)
+	
+	os.chdir(cwd)
 	if not (int(result) == 0) :
 		print("Shader compile Failed! : " + sourceFilePath)
 		return False

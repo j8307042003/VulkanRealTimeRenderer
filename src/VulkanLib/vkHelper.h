@@ -71,5 +71,7 @@ void CopyToImageBuffer(VkCommandPool commandPool, VkBuffer sourceBuffer, VkImage
 void transitImageLayout(VkCommandPool commandPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 void submitCommandBuffer(VkCommandBuffer commandBuffer);
 void LoadVkImage(const char * filename, const VkCommandPool & commandPool, VkImage & image, VkImageView & imageView);
+void LoadVkImageMipmap(const char * filename, const VkCommandPool & commandPool, VkImage & image, VkImageView & imageView, int & mipmapsLevel);
+void MakeMipmaps(VkImage image, VkFormat format, VkCommandPool commandPool, int width, int height, int mipmaps);
 
 #endif

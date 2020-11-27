@@ -109,13 +109,28 @@ void VkMaterial::ReadMainTexture(const VulkanLib::VulkanInstance & vulkanInstanc
 	mainTexImageView = imageView;
 	*/
 
-	LoadVkImage(fileName, commandPool, mainTexImg, mainTexImageView);
+	//LoadVkImage(fileName, commandPool, mainTexImg, mainTexImageView);
+	LoadVkImageMipmap(fileName, commandPool, mainTexImg, mainTexImageView, mipmapsLevel);
 }
 
 void VkMaterial::SetTexture(vkSys::TexMgr::Texture texture)
 {
 	mainTexImg = texture.image;
 	mainTexImageView = texture.imageView;	
+	mipmapsLevel = texture.mipmapsLevel;
+}
+
+void VkMaterial::SetSpecularTexture(vkSys::TexMgr::Texture texture)
+{
+	specTexImg = texture.image;
+	specImageView = texture.imageView;
+}
+
+
+void VkMaterial::SetNormalTexture(vkSys::TexMgr::Texture texture)
+{
+	normalTexImg = texture.image;
+	normalTexImageView = texture.imageView;
 }
 
 
@@ -124,14 +139,18 @@ VkMaterialProgram vkMatBuildProgram(const VkMaterial & mat, VkDevice device, VkR
 {
 	VkMaterialProgram program = {};
 
-	std::array<VkDescriptorSetLayoutBinding, 3> setLayoutBindings = 
+	std::array<VkDescriptorSetLayoutBinding, 7> setLayoutBindings = 
 	{
 		createDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT), // global data
-		createDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT),  // custom data
-		createDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, VK_SHADER_STAGE_FRAGMENT_BIT)  // mainTexture
+		createDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),  // custom data
+		createDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, VK_SHADER_STAGE_FRAGMENT_BIT),  // mainTexture
+		createDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, VK_SHADER_STAGE_FRAGMENT_BIT),  // specularTexture
+		createDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, VK_SHADER_STAGE_FRAGMENT_BIT),  // normal map
+		createDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, VK_SHADER_STAGE_FRAGMENT_BIT),  // GI skybox
+		createDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6, VK_SHADER_STAGE_FRAGMENT_BIT),  // BRDF LUT skybox
 	};
 
-	program.descriptorSetLayout = createDescriptorSetLayout(device, 3, &setLayoutBindings[0]);
+	program.descriptorSetLayout = createDescriptorSetLayout(device, setLayoutBindings.size(), &setLayoutBindings[0]);
 	program.pipelinelayout = createPipelineLayout(device, 1, &program.descriptorSetLayout);
 	program.pipeline = mat.shader.BuildPipeline(renderpass, subpass, program.pipelinelayout, vertexInputInfo);
 	program.renderpass = renderpass;

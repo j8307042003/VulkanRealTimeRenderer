@@ -1,6 +1,8 @@
 #include "vkHelper.h"
-#include<iostream>
-#include<vector>
+#include <iostream>
+#include <vector>
+#include <stdlib.h>
+#include <algorithm>
 #include <vulkan/vulkan.h>
 #include "Renderer/vkSys.h"
 #include <fstream>      // std::ifstream
@@ -284,6 +286,14 @@ VkPipelineLayout createPipelineLayout(const VkDevice & device, int layoutCount, 
 	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutCreateInfo.setLayoutCount = layoutCount;
 	pipelineLayoutCreateInfo.pSetLayouts = pSetLayouts;
+
+
+	VkPushConstantRange pcr = {};
+	pcr.size = 4*4*4;
+	pcr.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+	pipelineLayoutCreateInfo.pPushConstantRanges = &pcr;
+
 
 	VkPipelineLayout pipelineLayout;
 	if (vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
@@ -776,3 +786,195 @@ void LoadVkImage(const char * filename, const VkCommandPool & commandPool, VkIma
 	}	
 
 }
+
+void LoadVkImageMipmap(const char * filename, const VkCommandPool & commandPool, VkImage & image, VkImageView & imageView, int & mipmapsLevel)
+{
+	int width, height, channels;
+	stbi_uc * imageFileData = stbi_load(filename, &width, &height, &channels, STBI_rgb_alpha);
+
+	if (imageFileData == nullptr)
+	{
+		throw std::runtime_error("Load Image Failed. file not found! " + std::string(filename));
+		return;
+	}
+
+	auto & vulkanInstance = *vkSys::VkInstance::GetInstance();
+
+
+	uint32_t mipmaps = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+	mipmapsLevel = mipmaps;
+
+	VkDeviceSize imageSize = width * height * 4;
+	BufferObject imageBuffer = BuildBuffer(vulkanInstance.device, vulkanInstance.deviceMemProps, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, imageSize,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	CopyDataToDeviceMemory(vulkanInstance.device, imageBuffer.memory, imageBuffer.size, imageFileData);
+
+	stbi_image_free(imageFileData);
+
+	VkImageCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	createInfo.imageType = VK_IMAGE_TYPE_2D;
+	createInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+	createInfo.extent.width = width;
+	createInfo.extent.height = height;
+	createInfo.extent.depth = 1;
+	createInfo.mipLevels = mipmaps;
+	createInfo.arrayLayers = 1;
+	createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	createInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateImage(vulkanInstance.device, &createInfo, nullptr, &image) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Create vk image error!");
+	}
+
+	VkMemoryRequirements memReqs;
+	vkGetImageMemoryRequirements(vulkanInstance.device, image, &memReqs);
+	VkMemoryAllocateInfo memallocInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+	memallocInfo.allocationSize = memReqs.size;
+	getMemoryType(vulkanInstance.deviceMemProps, memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memallocInfo.memoryTypeIndex);
+	VkDeviceMemory imgMem;
+	VkResult result = vkAllocateMemory(vulkanInstance.device, &memallocInfo, nullptr, &imgMem);
+	if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("Allocate image memory error");
+		return;
+	}
+
+
+	result = vkBindImageMemory(vulkanInstance.device, image, imgMem, 0);
+	if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("bind image error");
+		return;
+	}
+
+
+	transitImageLayout(commandPool, image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	CopyToImageBuffer(commandPool, imageBuffer.buffer, image, width, height);
+	//transitImageLayout(commandPool, image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	vkDestroyBuffer(vulkanInstance.device, imageBuffer.buffer, nullptr);
+	vkFreeMemory(vulkanInstance.device, imageBuffer.memory, nullptr);
+
+	MakeMipmaps(image, VK_FORMAT_R8G8B8A8_SRGB, commandPool, width, height, mipmaps);
+
+	VkImageAspectFlags aspect = 0;
+	if (createInfo.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+	{
+		aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+
+	if (createInfo.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+	{
+		aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+	}
+
+
+
+	VkImageViewCreateInfo createViewInfo{};
+	createViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	createViewInfo.image = image;
+	createViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	createViewInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+	createViewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createViewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createViewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createViewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	createViewInfo.subresourceRange.baseMipLevel = 0;
+	createViewInfo.subresourceRange.levelCount = mipmaps;
+	createViewInfo.subresourceRange.baseArrayLayer = 0;
+	createViewInfo.subresourceRange.layerCount = 1;
+
+	if (vkCreateImageView(vulkanInstance.device, &createViewInfo, nullptr, &imageView) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create swap chain view!");
+	}
+}
+
+void MakeMipmaps(VkImage image, VkFormat format, VkCommandPool commandPool, int width, int height, int mipmaps)
+{
+	VulkanLib::VulkanInstance & vulkanInstance = *vkSys::VkInstance::GetInstance();
+	auto commandBuffer = AllocateCommandBuffer(vulkanInstance.device, commandPool, 1)[0];
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+	VkImageMemoryBarrier barrier = {};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image = image;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+
+
+	int mipmapWidth = width;
+	int mipmapHeight = height;
+
+	for (int i = 1; i < mipmaps; ++i)
+	{
+		barrier.subresourceRange.baseMipLevel = i - 1;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+		VkImageBlit imageBlit = {};
+		imageBlit.srcOffsets[0] = {0, 0, 0};
+		imageBlit.srcOffsets[1] = { mipmapWidth, mipmapHeight, 1};
+		imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlit.srcSubresource.baseArrayLayer = 0;
+		imageBlit.srcSubresource.layerCount = 1;
+		imageBlit.srcSubresource.mipLevel = i - 1;
+		imageBlit.dstOffsets[0] = {0, 0, 0};
+		imageBlit.dstOffsets[1] = { mipmapWidth > 1 ? mipmapWidth / 2 : 1, mipmapHeight > 1 ? mipmapHeight / 2 : 1, 1};
+		imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBlit.dstSubresource.baseArrayLayer = 0;
+		imageBlit.dstSubresource.layerCount = 1;
+		imageBlit.dstSubresource.mipLevel = i;
+
+		vkCmdBlitImage(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		vkCmdPipelineBarrier(commandBuffer,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+			0, nullptr,
+			0, nullptr,
+			1, &barrier);
+
+		if (mipmapWidth > 1) mipmapWidth /= 2;
+		if (mipmapHeight > 1) mipmapHeight /= 2;
+
+	}
+
+
+	barrier.subresourceRange.baseMipLevel = mipmaps - 1;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+	vkCmdPipelineBarrier(commandBuffer,
+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+		0, nullptr,
+		0, nullptr,
+		1, &barrier);
+
+	submitCommandBuffer(commandBuffer);
+	vkFreeCommandBuffers(vulkanInstance.device, commandPool, 1, &commandBuffer);
+
+}
+
