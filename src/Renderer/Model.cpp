@@ -2,7 +2,7 @@
 #include "assimp/cimport.h"
 #include "assimp/scene.h"
 #include "assimp/postprocess.h"
-
+#include "vkSys.h"
 
 
 void Model::SetData(std::vector<ModelVertexData> data, std::vector<uint32_t> indices)
@@ -66,4 +66,17 @@ void Model::LoadModel(const char * filename)
 			}
 		}
 	}
+
+	SendToGPU();
+}
+
+void Model::SendToGPU()
+{
+	VulkanLib::VulkanInstance & vulkanInstance = *vkSys::VkInstance::GetInstance();
+
+	vertexBufferObj = BuildBuffer(vulkanInstance.device, vulkanInstance.deviceMemProps, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT , sizeof(Model::ModelVertexData) * data.size());
+	indicesBufferObj = BuildBuffer(vulkanInstance.device, vulkanInstance.deviceMemProps, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, sizeof(uint32_t) * indices.size());
+
+	CopyDataToDeviceMemory(vulkanInstance.device, vertexBufferObj.memory, vertexBufferObj.size, data.data());
+	CopyDataToDeviceMemory(vulkanInstance.device, indicesBufferObj.memory, indicesBufferObj.size, indices.data());
 }

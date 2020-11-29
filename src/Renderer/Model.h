@@ -21,9 +21,13 @@ public:
 		glm::vec3 bitangent;
 	};
 
+	BufferObject vertexBufferObj;
+	BufferObject indicesBufferObj;
+
 	std::vector<ModelVertexData> data;
 	std::vector<uint32_t> indices;
 	void SetData(std::vector<ModelVertexData> data, std::vector<uint32_t> indices);
 	void LoadModel(const char * filename);
+	void SendToGPU();
 };
 #endif // !MODEL_HEADER

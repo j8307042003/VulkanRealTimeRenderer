@@ -64,6 +64,7 @@ std::vector<RenderData> RenderDataUtils::LoadObj(const char * filename, VkMateri
 				indicesNum++;
 			}
 		}
+		model.SendToGPU();
 
 		if (pMesh->mMaterialIndex >= 0) {
 			auto pMaterial = scene->mMaterials[pMesh->mMaterialIndex];
@@ -203,6 +204,7 @@ RenderData::RenderData()
 	modelMatrix = glm::mat4(1);
 	model = {};
 	mat = {};
+	sharedModel = nullptr;
 }
 
 
@@ -210,6 +212,12 @@ void RenderData::setModel(Model & model)
 {
 	this->model = model;
 }
+
+void RenderData::setSharedModel(Model * model)
+{
+	this->sharedModel = model;
+}
+
 
 void RenderData::setMaterial(VkMaterial & mat)
 {
@@ -272,12 +280,7 @@ VkMaterialProgram RenderData::buildProgram(VkDevice device, VkRenderPass renderp
 
 void RenderData::buildRenderData(VkDevice & device, const VkPhysicalDeviceMemoryProperties & deviceMemProps, VkDescriptorPool descriptorPool, VkDescriptorBufferInfo globalUniformBufInfo, VkImageView GIImageView, VkImageView BRDFLUTImageView)
 {
-	vertexBufferObj = BuildBuffer(device, deviceMemProps, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT , sizeof(Model::ModelVertexData) * model.data.size());
-	indicesBufferObj = BuildBuffer(device, deviceMemProps, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, sizeof(uint32_t) * model.indices.size());
 	customUboBufferObj = BuildBuffer(device, deviceMemProps, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(VkMaterial::MatProperty));
-
-	CopyDataToDeviceMemory(device, vertexBufferObj.memory, vertexBufferObj.size, model.data.data());
-	CopyDataToDeviceMemory(device, indicesBufferObj.memory, indicesBufferObj.size, model.indices.data());
 	CopyDataToDeviceMemory(device, customUboBufferObj.memory, customUboBufferObj.size, &mat.matProperty);
 
     VkSampler sampler = vkSys::Sampler::GetSampler(vkSys::Sampler2D, mat.mipmapsLevel);
@@ -315,9 +318,10 @@ void RenderData::render(VkCommandBuffer & commandBuffer)
 {
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, program.pipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, program.pipelinelayout, 0, 1, &descriptorSet, 0, nullptr);
-	VkDeviceSize offsets[1] = { 0 };		
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBufferObj.buffer, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, indicesBufferObj.buffer, offsets[0], VK_INDEX_TYPE_UINT32);
+	VkDeviceSize offsets[1] = { 0 };
+	auto * pModel = sharedModel != nullptr ? sharedModel : &model;		
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &pModel->vertexBufferObj.buffer, offsets);
+	vkCmdBindIndexBuffer(commandBuffer, pModel->indicesBufferObj.buffer, offsets[0], VK_INDEX_TYPE_UINT32);
 	vkCmdPushConstants(commandBuffer, program.pipelinelayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &modelMatrix);
-	vkCmdDrawIndexed(commandBuffer, model.indices.size(), 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandBuffer, pModel->indices.size(), 1, 0, 0, 0);
 }

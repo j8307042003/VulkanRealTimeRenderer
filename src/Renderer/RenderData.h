@@ -3,7 +3,7 @@
 #include "Model.h"
 #include "VkMaterial.h"
 #include "VulkanLib/vkHelper.h"
-
+#include <memory>
 
 class RenderData;
 
@@ -15,7 +15,6 @@ public:
 };
 
 class RenderData {
-	Model model;
 	VkMaterial mat;
 
 	VkMaterialProgram program;
@@ -24,10 +23,13 @@ class RenderData {
 	BufferObject customUboBufferObj;
 	VkDescriptorSet descriptorSet;
 public:
+	Model model;
+	Model * sharedModel;
 	glm::mat4 modelMatrix;
 
 	RenderData();
 	void setModel(Model & model);
+	void setSharedModel(Model * model);
 	void setMaterial(VkMaterial & mat);
 	void buildRenderData(VkDevice & device, const VkPhysicalDeviceMemoryProperties & deviceMemProps, VkDescriptorPool descriptorPool, VkDescriptorBufferInfo globalUniformBufInfo, VkImageView GIImageView, VkImageView BRDFLUTImageView);
 	void render(VkCommandBuffer & commandBuffer);

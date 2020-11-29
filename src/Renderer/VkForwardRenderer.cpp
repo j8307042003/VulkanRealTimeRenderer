@@ -852,16 +852,35 @@ void VkForwardRenderer::initCustomData()
 	mat.shader = { vulkanInstance.device, "working/subpassForward/forward.vert.spv", "working/subpassForward/forward.frag.spv" };
 	mat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/wall.jpg");
 
+
+	struct debugDrawData {
+		glm::vec3 pos;
+		glm::vec3 dir;
+	};
+
+	std::vector<debugDrawData> debugDrawDatas = {};
+	const int max = 2000;
 	//customDatas = RenderDataUtils::LoadObj("working/model/sponza.obj", mat, commandPool);
 	customDatas = RenderDataUtils::LoadObj("working/model/sponza-gltf-pbr/sponza.glb", mat, commandPool);
-
 	for (int i = 0; i < customDatas.size(); ++i)
 	{
 		customDatas[i].modelMatrix = glm::scale(glm::mat4(1), glm::vec3(0.01f, 0.01f, 0.01f));
 		customDatas[i].buildProgram(vulkanInstance.device, mainRenderPass, 0);
 		customDatas[i].buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView);
+		if (i < 4) continue;
+		for (int j = 0; j < customDatas[i].model.data.size() && debugDrawDatas.size() < max; ++j)
+		{
+			auto * d = &customDatas[i].model.data[j];
+			glm::vec3 pos = customDatas[i].modelMatrix * glm::vec4(d->pos, 1.0);
+			glm::vec3 worldNormal = glm::normalize(glm::mat3(customDatas[i].modelMatrix) * d->normal);
+			glm::vec3 worldtangent = glm::normalize(glm::mat3(customDatas[i].modelMatrix) * d->tangent);
+			glm::vec3 worldBitangent = glm::normalize(glm::mat3(customDatas[i].modelMatrix) * d->bitangent);
+			debugDrawDatas.push_back({ pos, worldNormal });
+			debugDrawDatas.push_back({ pos, worldtangent });
+			debugDrawDatas.push_back({pos, worldBitangent });
+		}
+	
 	}
-
 
 	VkMaterial sphereMat = {};
 	//sphereMat.shader = { vulkanInstance.device, "working/subpassForward/forward.vert.spv", "working/subpassForward/sphere.frag.spv" };
@@ -877,10 +896,10 @@ void VkForwardRenderer::initCustomData()
 
 	//auto nanosuit = RenderDataUtils::LoadObj("working/model/nanosuit/nanosuit.obj", mat, commandPool);
 	VkMaterial gunMat = mat;
-	gunMat.SetTexture(*vkSys::TexMgr::GetTexture("working/model/Cerberus_by_Andrew_Maximov/Textures/Cerberus_A.tga", commandPool));
-	gunMat.SetNormalTexture(*vkSys::TexMgr::GetTexture("working/model/Cerberus_by_Andrew_Maximov/Textures/Cerberus_N.tga", commandPool));
-	gunMat.SetSpecularTexture(*vkSys::TexMgr::GetTexture("working/model/Cerberus_by_Andrew_Maximov/Textures/CerberusCombine.png", commandPool));
-	auto nanosuit = RenderDataUtils::LoadObj("working/model/Cerberus_by_Andrew_Maximov/Cerberus_LP.FBX", mat, commandPool);
+	// gunMat.SetTexture(*vkSys::TexMgr::GetTexture("working/model/Cerberus_by_Andrew_Maximov/Textures/Cerberus_A.tga", commandPool));
+	// gunMat.SetNormalTexture(*vkSys::TexMgr::GetTexture("working/model/Cerberus_by_Andrew_Maximov/Textures/Cerberus_N.tga", commandPool));
+	// gunMat.SetSpecularTexture(*vkSys::TexMgr::GetTexture("working/model/Cerberus_by_Andrew_Maximov/Textures/CerberusCombine.png", commandPool));
+	// auto nanosuit = RenderDataUtils::LoadObj("working/model/Cerberus_by_Andrew_Maximov/Cerberus_LP.FBX", mat, commandPool);
 	//auto nanosuit = RenderDataUtils::LoadObj("working/model/dragon.obj", mat, commandPool);
 	//auto nanosuit = RenderDataUtils::LoadObj("model/InfiniteScan/Head.fbx", mat, commandPool);	
 	int begin = customDatas.size();
@@ -904,7 +923,7 @@ void VkForwardRenderer::initCustomData()
 		sphere[i].modelMatrix = glm::scale(glm::translate(glm::mat4(1), glm::vec3(0.0f, 2.0f, 0.0f)), glm::vec3(0.1, 0.1, 0.1));
 		sphere[i].setMaterial(sphereMat);
 		sphere[i].buildProgram(vulkanInstance.device, mainRenderPass, 0);
-		sphere[i].buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView);
+		//sphere[i].buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView);
 	}
 	//customDatas.insert(customDatas.end(), sphere.begin(), sphere.end());
 
@@ -914,9 +933,61 @@ void VkForwardRenderer::initCustomData()
 	skyboxRenderData.setMaterial(skyboxMat);
 	skyboxRenderData.setModel(m);
 	skyboxRenderData.buildProgram(vulkanInstance.device, mainRenderPass, 0);
-	skyboxRenderData.buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView);
+	//skyboxRenderData.buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView);
 	//customDatas.push_back(skyboxRenderData);
+
+
+	//debug
+
+
+
+	debugDrawDatas.push_back({ {0, 1, 1}, {0, 1, 0} });
+
+
+	VkMaterial debugMat = {};
+	auto defaultTex = vkSys::TexMgr::GetTexture("working/texture/wall.jpg", commandPool);
+	//debugMat.shader = { vulkanInstance.device, "working/subpassForward/debug/debug.vert.spv", "working/subpassForward/debug/debug.frag.spv" };
+	debugMat.shader = { vulkanInstance.device, "working/subpassForward/forward.vert.spv", "working/subpassForward/debug/debug.frag.spv" };
+	debugMat.SetNormalTexture(*defaultTex);
+	debugMat.SetSpecularTexture(*defaultTex);
+	debugMat.SetTexture(*defaultTex);
+	Model * debugModel = new Model();
+	debugModel->LoadModel("working/model/primitive/cylinder.obj");
+
+	for (int i = 0; i < debugModel->data.size(); ++i)
+	{
+		debugModel->data[i].tangent = glm::vec3(0, 1, 0);
+		debugModel->data[i].bitangent = glm::vec3(0, 1, 0);
+	}
+
+
+	std::vector<RenderData> debugRenderDatas = {};
+	debugRenderDatas.resize(debugDrawDatas.size());
+	for(int i = 0; i < debugDrawDatas.size(); ++i)
+	{
+		RenderData rd = {};
+
+		glm::vec3 axisYCrosser = glm::dot(debugDrawDatas[i].dir, glm::vec3(0.0, 1.0, 0.0)) < 0.5f ? glm::vec3(0.0, 1.0, 0.0) : glm::vec3(0.0, 0.0, 1.0);
+		glm::vec3 tangent = glm::normalize(glm::cross(axisYCrosser, debugDrawDatas[i].dir));
+
+		glm::mat4 translate = glm::translate( glm::mat4(1), glm::vec3(debugDrawDatas[i].pos));
+		//glm::mat4 rotation = glm::toMat4(glm::quatLookAt(debugDrawDatas[i].dir, glm::vec3(0.0, 1.0, 0.0)));
+		glm::mat4 rotation = glm::toMat4(glm::quatLookAt(tangent, debugDrawDatas[i].dir));
+		glm::mat4 rt = translate * rotation;
+		rd.modelMatrix = glm::scale(rt, glm::vec3(0.005, 0.05, 0.005));
+		//glm::vec3 op = rt * glm::vec4(0.0, 0.0, 0.0, 1.0);
+		rd.setSharedModel(debugModel);
+		rd.setMaterial(debugMat);
+		rd.buildProgram(vulkanInstance.device, mainRenderPass, 0);
+		rd.buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView);
+		debugRenderDatas[i] = rd;
+	}
+
+	customDatas.insert(customDatas.end(), debugRenderDatas.begin(), debugRenderDatas.end());
+
 }
+
+
 
 
 void VkForwardRenderer::initCamera()

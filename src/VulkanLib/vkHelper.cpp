@@ -18,7 +18,7 @@
 VkInstance CreateVulkanInstance(int layerCount, const char* const* ppLayerNames, int extensionCount, const char ** extensions) {
 	VkInstance instance;
     VkInstanceCreateInfo info = {};
-	info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     info.enabledLayerCount = layerCount;
     info.ppEnabledLayerNames = ppLayerNames;
 	info.enabledExtensionCount = extensionCount;
@@ -601,7 +601,7 @@ void CopyToImageBuffer(VkCommandPool commandPool, VkBuffer sourceBuffer, VkImage
 	vkFreeCommandBuffers(vulkanInstance.device, commandPool, 1, &commandBuffer);
 }
 
-void transitImageLayout(VkCommandPool commandPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+void transitImageLayout(VkCommandPool commandPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, int mipmapsCount)
 {
 	VulkanLib::VulkanInstance & vulkanInstance = *vkSys::VkInstance::GetInstance();	
 	auto commandBuffer = AllocateCommandBuffer(vulkanInstance.device, commandPool, 1)[0];
@@ -621,7 +621,7 @@ void transitImageLayout(VkCommandPool commandPool, VkImage image, VkFormat forma
     barrier.image = image;
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.levelCount = mipmapsCount;
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = 1;
 
@@ -853,7 +853,7 @@ void LoadVkImageMipmap(const char * filename, const VkCommandPool & commandPool,
 	}
 
 
-	transitImageLayout(commandPool, image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	transitImageLayout(commandPool, image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipmapsLevel);
 	CopyToImageBuffer(commandPool, imageBuffer.buffer, image, width, height);
 	//transitImageLayout(commandPool, image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 

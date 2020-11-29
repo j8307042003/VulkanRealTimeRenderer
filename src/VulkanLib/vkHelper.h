@@ -68,7 +68,7 @@ BufferObject BuildBuffer(const VkDevice & device, const VkPhysicalDeviceMemoryPr
 BufferObject BuildBuffer(const VkDevice & device, const VkPhysicalDeviceMemoryProperties & deviceMemProps, VkBufferUsageFlags usafeFlag, size_t size, VkFlags usage);
 VkBool32 getSupportedDepthFormat(VkPhysicalDevice physicalDevice, VkFormat *depthFormat);
 void CopyToImageBuffer(VkCommandPool commandPool, VkBuffer sourceBuffer, VkImage dstImage, int width, int height);
-void transitImageLayout(VkCommandPool commandPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+void transitImageLayout(VkCommandPool commandPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, int mipmapsCount = 1);
 void submitCommandBuffer(VkCommandBuffer commandBuffer);
 void LoadVkImage(const char * filename, const VkCommandPool & commandPool, VkImage & image, VkImageView & imageView);
 void LoadVkImageMipmap(const char * filename, const VkCommandPool & commandPool, VkImage & image, VkImageView & imageView, int & mipmapsLevel);
