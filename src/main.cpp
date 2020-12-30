@@ -15,6 +15,10 @@
 #include"BVH/AABB.h"
 
 #define GL_SILENCE_DEPRECATION
+
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_RADIANS
+//#define GLM_FORCE_LEFT_HANDED
 // #include <glad/glad.h>
 
 #include <GLFW/glfw3.h>

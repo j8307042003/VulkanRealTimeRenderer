@@ -29,6 +29,7 @@ VkDevice CreateLogicalDevice(VkPhysicalDevice & physicalDevice, uint32_t queueFa
 VkQueue CreateQueue(VkDevice & device, uint32_t queueFamily) ;
 VkCommandPool createCommandPool(VkDevice & device, uint32_t & queueFamily) ;
 std::vector<VkCommandBuffer> AllocateCommandBuffer(const VkDevice & device, VkCommandPool & commandPool, int num) ;
+void LoadFile(const char * filename, std::vector<char> & code);
 VkShaderModule createShaderModule(VkDevice & device, const std::vector<char> & code);
 VkShaderModule createShaderModule(VkDevice & device, const int & codeLen, const char * code) ;
 VkShaderModule createShaderModule(VkDevice & device, std::string & filename) ;

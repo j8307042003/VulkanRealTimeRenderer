@@ -14,13 +14,18 @@ layout(location = 2) out vec3 worldPos;
 layout(location = 3) out vec3 fragNormal;
 layout(location = 4) out vec3 fragTangent;
 layout(location = 5) out vec3 fragBitangent;
-layout(location = 6) out mat3 tangentToWorld;
+// layout(location = 6) out mat3 tangentToWorld;
+layout(location = 6) out vec4 shadowmapPos;
 
 layout(binding = 0) uniform UBO {
 	mat4 mvpMatrix;
 	mat4 vpMatrix;
 	mat4 projectionMatrix;
 	mat4 worldToCamMatrix;		
+    vec4 cameraPos;
+    vec4 directionalLightDir;
+    vec4 directionalLightColor;
+    mat4 shadowmapVpMatrix;
 } ubo;
 
 layout(binding = 1) uniform CustomUBO {
@@ -49,6 +54,11 @@ vec3 CreateBinormal(vec3 normal, vec3 tangent, float tangentSign)
     return binormal;
 }
 
+const mat4 biasMat = mat4( 
+    0.5, 0.0, 0.0, 0.0,
+    0.0, 0.5, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.5, 0.5, 0.0, 1.0 );
 
 void main() {
     vec4 outPos = ubo.mvpMatrix * vec4(pos, 1.0);
@@ -64,9 +74,12 @@ void main() {
     fragNormal = normalize(mat3(normalMatrix)*normalize(normal));
     fragTangent = normalize(mat3(normalMatrix)*normalize(tangent));
     fragBitangent = normalize(mat3(normalMatrix)*normalize(bitangent));
-    // fragBitangent = CreateBinormal(fragNormal, fragTangent, -1);
+    // fragBitangent = CreateBinormal(fragNormal, fragTangent, bitangent.x);
 
     //mat3 tbn = mat3(fragTangent, fragBitangent, fragNormal);
-    mat3 tbn = mat3(fragTangent, bitangent, fragNormal);
-    tangentToWorld = tbn;
+    mat3 tbn = mat3(fragTangent, fragBitangent, fragNormal);
+    //tangentToWorld = (tbn);
+
+
+    shadowmapPos = ubo.shadowmapVpMatrix * pushConsts.modelMatrix * vec4(pos, 1.0);
 }

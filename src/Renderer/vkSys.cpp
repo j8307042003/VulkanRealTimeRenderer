@@ -56,9 +56,13 @@ VkSampler vkSys::Sampler::Create2DSampler(int mipmaps)
 vkSys::TexMgr::Texture * vkSys::TexMgr::GetTexture(const char * filename, const VkCommandPool & commandPool)
 {
 	int len = strlen(filename);
-	if (filename[len-1] == '/')
+	if (filename[len-1] == '/' || len == 0)
 	{
 		filename = "working/texture/87face.png";
+	}
+	else
+	{
+		//filename = "working/model/sponza-gltf-pbr/1180362371129094107.png";
 	}
 
 	auto it = map.find(filename);

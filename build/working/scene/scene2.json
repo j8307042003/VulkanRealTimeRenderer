@@ -1,0 +1,82 @@
+{
+	"materials" : 
+	[
+		{
+			"name" : "mat1",
+			"vertexShader" : "working/subpassForward/forward.vert.spv",
+			"fragmentShader" :  "working/subpassForward/forward.frag.spv",
+			"albedo" : "",
+			"specular" : "",
+			"normalMap" : ""
+		},		
+		{
+			"name" : "sphereMat",
+			"vertexShader" : "working/subpassForward/forward.vert.spv",
+			"fragmentShader" :  "working/subpassForward/forward_noNormal.frag.spv",
+			"albedo" : "working/texture/white.png",
+			"specular" : "working/texture/blue.png",
+			"normalMap" : "working/texture/blue.png"			
+		},
+
+		{
+			"name" : "helmet",
+			"vertexShader" : "working/subpassForward/forward.vert.spv",
+			"fragmentShader" :  "working/subpassForward/forwardEmit.frag.spv",
+			"albedo" : "working/model/DamagedHelmet/glTF/Default_albedo.jpg",
+			"specular" : "working/model/DamagedHelmet/glTF/Default_metalRoughness.jpg",
+			"normalMap" : "working/model/DamagedHelmet/glTF/Default_normal.jpg",
+			"assignment" :{
+							"emitTex" : "working/model/DamagedHelmet/glTF/Default_emissive.jpg"
+						  }				
+			
+		}		
+
+
+	],
+
+	"meshs" :
+	[
+		{
+			"name" : "sphereMesh",
+			"file" : "working/model/sphere.obj"
+		}		
+	],
+
+
+	"models" :
+	[
+
+		{
+			"mesh" : "mesh1",
+			"material" : "mat1",
+			"autoBuild" : true,
+			"meshPath" : "working/model/sponza.obj",
+
+			"pos" : [0.0, 0.0, 0.0],
+			"rot" : [0.0, 0.0, 0.0],
+			"scale" : [0.01, 0.01, 0.01]
+		},
+
+		{
+			"_comment" : "Test Sphere",
+			"mesh" : "sphereMesh",
+			"material" : "sphereMat",
+			"pos" : [-5.0, 1.0, 0.0],
+			"rot" : [0.0, 0.0, 0.0],
+			"scale" : [0.5, 0.5, 0.5]
+		},
+
+		{
+			"mesh" : "mesh1",
+			"material" : "helmet",
+			"autoBuild" : true,
+			"overrideMat" : false,			
+			"meshPath" : "working/model/DamagedHelmet/glTF/DamagedHelmet.gltf",
+
+			"pos" : [-1.0, 2.0, 0.0],
+			"rot" : [90.0, 0.0, 0.0],
+			"scale" : [1.0, 1.0, 1.0]
+		}		
+
+	]
+}

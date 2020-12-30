@@ -1,0 +1,149 @@
+{
+	"materials" : 
+	[
+		{
+			"name" : "mat1",
+			"vertexShader" : "working/subpassForward/forward.vert.spv",
+			"fragmentShader" :  "working/subpassForward/forward.frag.spv",
+			"albedo" : "",
+			"specular" : "",
+			"normalMap" : ""
+		},
+
+		{
+			"name" : "mat_noNormal",
+			"vertexShader" : "working/subpassForward/forward.vert.spv",
+			"fragmentShader" :  "working/subpassForward/forward_noNormal.frag.spv",
+			"albedo" : "",
+			"specular" : "",
+			"normalMap" : ""
+		},		
+
+		{
+			"name" : "gunMat",
+			"vertexShader" : "working/subpassForward/forward.vert.spv",
+			"fragmentShader" :  "working/subpassForward/forward.frag.spv",
+			"albedo" : "working/model/Cerberus_by_Andrew_Maximov/Textures/Cerberus_A.tga",
+			"specular" : "working/model/Cerberus_by_Andrew_Maximov/Textures/CerberusCombine.png",
+			"normalMap" : "working/model/Cerberus_by_Andrew_Maximov/Textures/Cerberus_N.tga"	
+		},
+
+		{
+			"name" : "carMat",
+			"vertexShader" : "working/subpassForward/forward.vert.spv",
+			"fragmentShader" :  "working/subpassForward/forward911.frag.spv",
+			"albedo" : "working/model/Cerberus_by_Andrew_Maximov/Textures/Cerberus_A.tga",
+			"specular" : "working/model/Cerberus_by_Andrew_Maximov/Textures/CerberusCombine.png",
+			"normalMap" : "working/model/Cerberus_by_Andrew_Maximov/Textures/Cerberus_N.tga",
+
+			"assignment" :{
+							"mainTex" : "working/model/911GT/skin02/0000.BMP",
+							"paramTex" : "working/model/911GT/skin06/0000-a.BMP"
+						  }			
+		},	
+
+
+		{
+			"name" : "sphereMat",
+			"vertexShader" : "working/subpassForward/forward.vert.spv",
+			"fragmentShader" :  "working/subpassForward/forward_noNormal.frag.spv",
+			"albedo" : "working/texture/white.png",
+			"specular" : "working/texture/blue.png",
+			"normalMap" : "working/texture/blue.png"
+		}
+
+
+	],
+
+	"meshs" :
+	[
+		{
+			"name" : "mesh1",
+			"file" : "working/model/MetalRoughSpheres/glTF/MetalRoughSpheres.gltf"
+		},
+		{
+			"name" : "sphereMesh",
+			"file" : "working/model/sphere.obj"
+		}		
+	],
+
+
+	"models" :
+	[
+		{
+			"mesh" : "mesh1",
+			"material" : "mat1",
+			"autoBuild" : true,
+			"meshPath" : "working/model/Sponza/glTF/Sponza.gltf",
+
+			"pos" : [0.0, 0.0, 0.0],
+			"rot" : [0.0, 0.0, 0.0],
+			"scale" : [0.01, 0.01, 0.01]
+		},
+
+
+		{
+			"mesh" : "mesh1",
+			"material" : "mat_noNormal",
+			"autoBuild" : true,
+			"meshPath" : "working/model/Suzanne/glTF/Suzanne.gltf",
+
+			"pos" : [-1.0, 1.0, 0.0],
+			"rot" : [0.0, 90.0, 0.0],
+			"scale" : [0.5, 0.5, 0.5]
+		},
+
+		
+
+		{
+			"mesh" : "mesh1",
+			"material" : "gunMat",
+			"autoBuild" : true,
+			"overrideMat" : false,
+			"meshPath" : "working/model/Cerberus_by_Andrew_Maximov/Cerberus_LP.FBX",
+
+			"pos" : [5.0, 2.0, 0.0],
+			"rot" : [0.0, 90.0, 90.0],
+			"scale" : [0.01, 0.01, 0.01]
+		},
+
+		{
+			"mesh" : "mesh1",
+			"material" : "mat_noNormal",
+			"autoBuild" : true,
+			"castShadow" : false,
+			"meshPath" : "working/model/MetalRoughSpheres/glTF/MetalRoughSpheres.gltf",
+
+			"pos" : [-3.0, 2.0, 0.0],
+			"rot" : [270.0, 90.0, 0.0],
+			"scale" : [0.1, 0.1, 0.1]
+		},
+
+
+
+		{
+			"_comment" : "Test Sphere",
+			"mesh" : "sphereMesh",
+			"material" : "sphereMat",
+			"pos" : [2.0, 2.0, 0.0],
+			"rot" : [0.0, 0.0, 0.0],
+			"scale" : [0.03, 0.03, 0.03]
+		},
+
+		{
+			"mesh" : "mesh1",
+			"material" : "carMat",
+			"autoBuild" : true,
+			"overrideMat" : false,
+			"meshPath" : "working/model/911GT/Porsche_911_GT2.obj",
+
+			"pos" : [2.0, 0.6, 0.0],
+			"rot" : [0.0, 45.0, 0.0],
+			"scale" : [0.8, 0.8, 0.8]
+		}		
+
+		
+
+	]
+
+}

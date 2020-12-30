@@ -9,9 +9,11 @@
 #include "VulkanLib/VulkanInstance.h"
 #include "Camera.h"
 #include "math/Matrix4.h"
+#include "json11.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #define GL_SILENCE_DEPRECATION
 #include "GLFW/include/GLFW/glfw3.h"
+
 typedef unsigned int uint;
 
 
@@ -67,14 +69,19 @@ class VkForwardRenderer : public Renderer {
 	private:
 		VulkanLib::VulkanInstance vulkanInstance;
 		VkEngine::Window windowData;
+		VkFramebuffer shadowmapFrameBuffer;
+
 
 		VkEngine::ScreenSetting screenSetting;
 		VkRenderPass mainRenderPass;
+		VkRenderPass shadowRenderPass;
 
 		std::vector<VkAttachmentDescription> attachmentDes;
 
 		VkEngine::Img colorImg;
 		VkEngine::Img depthImg;
+		VkEngine::Img shadowmapImg;
+		const int kShadowMapRes = 2048;
 
 		VkQueue presentQueue;
 
@@ -101,7 +108,8 @@ class VkForwardRenderer : public Renderer {
 		//SceneObj
 		RenderData quadObj;
 
-
+		glm::vec3 directionalLightAngle = glm::vec3(0, 0, 0);
+		glm::vec3 directionalLightDir = glm::normalize(glm::vec3(-0.216, -0.973, 0.069));
 		std::vector<RenderData> customDatas;
 
 		std::vector<VkCommandBuffer> commandBuffers;
@@ -115,13 +123,19 @@ class VkForwardRenderer : public Renderer {
 			glm::vec4 cameraPos;
 			glm::vec4 directionalLightDir;
 			glm::vec4 directionalLightColor;
+			glm::mat4 shadowVPMatrix;			
+			glm::vec4 floatArrs; // 0 time
 		};
 
 		GlobalUniformData globalUniformData;
 		BufferObject globalUniformBfferObj;		
+		BufferObject shadowPassUniformBufferObj;		
+
 		Camera camera;
 
-
+		json11::Json sceneJsonData;
+		std::map<std::string, VkMaterial> materials = {};
+		std::map<std::string, std::shared_ptr<Model>> models = {};
 
 		GLfloat deltaTime = 0.0f;
 		GLfloat lastFrame = 0.0f;
@@ -144,6 +158,7 @@ class VkForwardRenderer : public Renderer {
 		void initAttachment();
 		void initFrameBuffer();
 		void initRenderPass();
+		void initShadowRenderPass();
 		void initPipeline();
 		void initShader();
 		void initDescriptor();
@@ -151,6 +166,7 @@ class VkForwardRenderer : public Renderer {
 		void initCustomData();
 		void initCommandBuffer();
 		void initCamera();
+		void initSceneData();		
 		void checkAndCreateVulkanInstance();
 
 		void doMovement();

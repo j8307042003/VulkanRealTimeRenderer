@@ -17,6 +17,9 @@
 #include <glm/gtx/string_cast.hpp>
 #include <array>
 
+#include "json11.hpp"
+#include <fstream>      // std::ifstream
+#include <memory>
 
 bool checkDeviceExtensionSupport(VkPhysicalDevice device, std::vector<const char *> * deviceExtensions) {
 	uint32_t extensionCount;
@@ -47,7 +50,6 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     //    renderer->ClearImage();
     //    std::cout << "-----------------" << std::endl;
     //}
-
 	
     if (action == GLFW_PRESS){
         glfwGetCursorPos(window, &mouse_pos_x, &mouse_pos_y);
@@ -101,6 +103,54 @@ void VkForwardRenderer::doMovement()
         std::cout << "position : " << camera.transform.position.tostring() << std::endl;
 
 	}
+
+	float l_x = 0, l_y = 0, l_z = 0;
+	int ratio = 1;
+	if (keys[GLFW_KEY_1]) {
+		l_x += ratio;
+	}
+
+	if (keys[GLFW_KEY_2]) {
+		l_x -= ratio;
+	}
+
+	if (keys[GLFW_KEY_3]) {
+		l_y += ratio;	
+	}
+
+	if (keys[GLFW_KEY_4]) {
+		l_y -= ratio;		
+	}
+
+	if (keys[GLFW_KEY_5]) {
+		l_z += ratio;			
+	}
+
+	if (keys[GLFW_KEY_6]) {
+		l_z -= ratio;			
+	}			
+
+	directionalLightAngle.x += l_x;
+	directionalLightAngle.y += l_y;
+	directionalLightAngle.z += l_z;
+
+	if (directionalLightAngle.x > 360) directionalLightAngle.x -= 360;
+	if (directionalLightAngle.x <   0) directionalLightAngle.x  = 360 - directionalLightAngle.x;		
+
+	if (directionalLightAngle.y > 360) directionalLightAngle.y -= 360;
+	if (directionalLightAngle.y <   0) directionalLightAngle.y  = 360 - directionalLightAngle.y;		
+
+	if (directionalLightAngle.z > 360) directionalLightAngle.z -= 360;
+	if (directionalLightAngle.z <   0) directionalLightAngle.z  = 360 - directionalLightAngle.z;		
+
+	if ( l_x != 0 || l_y != 0 || l_z != 0 )
+	{
+		glm::mat4 rot = glm::toMat4(glm::quat(glm::radians(directionalLightAngle)));
+		glm::vec4 d = glm::mat4(1) * rot * glm::vec4(0, 0, 1, 1);
+		directionalLightDir = d;
+		directionalLightDir = glm::normalize(directionalLightDir);
+		//std::cout << "dir : " << glm::to_string(directionalLightDir) << std::endl;
+	}
 	
 }
 
@@ -127,7 +177,7 @@ void VkForwardRenderer::doRotate()
         // const float kRotRatio = 1 / 10.0f;
         camera.transform.rotation = 
             // glm::normalize(cam.transform.rotation * glm::quat( delta_y * kRotRatio, delta_x * kRotRatio, 0, 0 ));
-            glm::normalize(glm::quat(glm::radians(glm::vec3{rot_y, -rot_x, 180 })));
+            glm::normalize(glm::quat(glm::radians(glm::vec3{rot_y, -rot_x, 0.0 })));
             // glm::normalize(cam.transform.rotation * glm::quat({delta_y * kRotRatio, delta_x * kRotRatio, 0 }));
         std::cout << "rotation : " << rot_y << "  " << rot_x << std::endl;
     }
@@ -138,7 +188,7 @@ void VkForwardRenderer::doRotate()
 VkForwardRenderer::VkForwardRenderer()
 {
 	screenSetting.x = 1920; // 1280;
-	screenSetting.y = 1080; //  900;
+	screenSetting.y = 1080; // 900;
 
 	if (!glfwInit())
     return;
@@ -167,7 +217,7 @@ VkForwardRenderer::VkForwardRenderer()
 
 	commandPool = createCommandPool(vulkanInstance.device, vulkanInstance.queueFamily);
 
-
+	initSceneData();
 	initCustomData();
 	initCommandBuffer();
 }
@@ -191,6 +241,18 @@ void VkForwardRenderer::initBuffer()
 	camera.transform.UpdateMatrix();
 	globalUniformData = {camera.transform.modelMatrix};
 	globalUniformBfferObj = BuildBuffer(vulkanInstance.device, vulkanInstance.deviceMemProps, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(GlobalUniformData));
+
+
+	shadowPassUniformBufferObj = BuildBuffer(vulkanInstance.device, vulkanInstance.deviceMemProps, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(GlobalUniformData));
+	glm::mat4 projectionMatrix = glm::ortho(-30.0f, 30.0f, -30.0f, 30.0f, 1.0f, 300.0f);
+	//glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), (GLfloat) 1.0f, 0.001f, 1000.0f);
+
+	//projectionMatrix[1][1] *= -1.0f;
+	auto view = glm::lookAt(-directionalLightDir * 30.0f, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	globalUniformData.vp = projectionMatrix * view * glm::mat4(1);
+	globalUniformData.shadowVPMatrix = globalUniformData.vp; 
+	CopyDataToDeviceMemory(vulkanInstance.device, shadowPassUniformBufferObj.memory, shadowPassUniformBufferObj.size, &globalUniformData);
 }
 
 
@@ -420,43 +482,135 @@ void VkForwardRenderer::initAttachment()
 	getSupportedDepthFormat(vulkanInstance.physicalDevice, &depthFormat);
 	createImg(screenSetting.x, screenSetting.y, windowData.surfaceFormat.format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, colorImg);
 	createImg(screenSetting.x, screenSetting.y, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, depthImg);	
+	createImg(kShadowMapRes, kShadowMapRes, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, shadowmapImg);	
 }
 
 
 void VkForwardRenderer::initFrameBuffer()
 {
-	//frame buffer create set up
-	VkImageView fbAttachments[frameBuffer_Max];
-
-	VkFramebufferCreateInfo framebufferInfo = {};
-	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	framebufferInfo.renderPass = mainRenderPass;
-	framebufferInfo.attachmentCount = 3;
-	framebufferInfo.pAttachments = fbAttachments;
-	framebufferInfo.width = windowData.swapChainExtent.width;
-	framebufferInfo.height = windowData.swapChainExtent.height;
-	framebufferInfo.layers = 1;
-
-
-
-	windowData.frameBuffers = {};
-	windowData.frameBuffers.resize(windowData.swapchainImageViews.size());
-	for (int i = 0; i < windowData.frameBuffers.size(); ++i)
 	{
-		fbAttachments[frameBuffer_Swapchain] = windowData.swapchainImageViews[i]; 
-		fbAttachments[frameBuffer_Color] = colorImg.view;
-		fbAttachments[frameBuffer_Depth] = depthImg.view; 
+		//frame buffer create set up
+		VkImageView fbAttachments[frameBuffer_Max];
+
+		VkFramebufferCreateInfo framebufferInfo = {};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = mainRenderPass;
+		framebufferInfo.attachmentCount = 3;
+		framebufferInfo.pAttachments = fbAttachments;
+		framebufferInfo.width = windowData.swapChainExtent.width;
+		framebufferInfo.height = windowData.swapChainExtent.height;
+		framebufferInfo.layers = 1;
 
 
-		if (vkCreateFramebuffer(vulkanInstance.device, &framebufferInfo, nullptr, &windowData.frameBuffers[i]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create frame buffer!");
-		}		
+
+		windowData.frameBuffers = {};
+		windowData.frameBuffers.resize(windowData.swapchainImageViews.size());
+		for (int i = 0; i < windowData.frameBuffers.size(); ++i)
+		{
+			fbAttachments[frameBuffer_Swapchain] = windowData.swapchainImageViews[i]; 
+			fbAttachments[frameBuffer_Color] = colorImg.view;
+			fbAttachments[frameBuffer_Depth] = depthImg.view; 
+	
+	
+			if (vkCreateFramebuffer(vulkanInstance.device, &framebufferInfo, nullptr, &windowData.frameBuffers[i]) != VK_SUCCESS) {
+				throw std::runtime_error("failed to create frame buffer!");
+			}		
+		}
 	}
+
+
+	// shadow frame buffer
+	{
+		//frame buffer create set up
+		VkFramebufferCreateInfo framebufferInfo = {};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = shadowRenderPass;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = &shadowmapImg.view;
+		framebufferInfo.width = kShadowMapRes;
+		framebufferInfo.height = kShadowMapRes;
+		framebufferInfo.layers = 1;
+
+		if (vkCreateFramebuffer(vulkanInstance.device, &framebufferInfo, nullptr, &shadowmapFrameBuffer) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create shadow map frame buffer!");
+		}	
+
+	}
+
+}
+
+void VkForwardRenderer::initShadowRenderPass()
+{
+
+	std::array<VkAttachmentDescription, 1> shadowPassAttachs = {};
+
+	//todo
+	VkAttachmentDescription depthAttachment{};
+	depthAttachment.format = depthImg.format;
+	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	shadowPassAttachs[0] = depthAttachment;
+
+
+	VkAttachmentReference depthAttachmentRef{};
+	depthAttachmentRef.attachment = 0;
+	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+
+	VkSubpassDescription subpasses[1] = {};
+	// shadow subpass
+	subpasses[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpasses[0].colorAttachmentCount = 0;
+	subpasses[0].pDepthStencilAttachment = &depthAttachmentRef;
+
+	/*
+	std::array<VkSubpassDependency, 2> dependencies = {};
+    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass = 0;
+    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;	
+
+    dependencies[1].srcSubpass = 0;
+    dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    dependencies[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;	
+	*/
+
+	shadowRenderPass = {};
+	VkPipelineLayout pipelineLayout;
+	VkRenderPassCreateInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = static_cast<uint32_t>(shadowPassAttachs.size());
+	renderPassInfo.pAttachments = &shadowPassAttachs[0];
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpasses[0];
+	renderPassInfo.dependencyCount = 0;
+	renderPassInfo.pDependencies = nullptr;
+
+	VkResult result = vkCreateRenderPass(vulkanInstance.device, &renderPassInfo, nullptr, &shadowRenderPass);
+	if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("create render pass error!");
+	}	
 }
 
 
 void VkForwardRenderer::initRenderPass()
 {
+
+	initShadowRenderPass();
+
 	attachmentDes = {};
 	attachmentDes.resize(frameBuffer_Max);
 
@@ -744,6 +898,55 @@ void VkForwardRenderer::initCommandBuffer()
 			throw std::runtime_error("command buffer begin info error!");
 		}
 
+		//shadow map pass
+		{
+			VkExtent2D extent = {};
+    		extent.width = kShadowMapRes;
+    		extent.height = kShadowMapRes;
+
+			VkRect2D scissor = {};
+			scissor.offset = {0, 0};
+			scissor.extent = extent;
+
+
+			VkRenderPassBeginInfo renderPassBeginInfo = {};
+			renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			renderPassBeginInfo.renderPass = shadowRenderPass;
+			renderPassBeginInfo.framebuffer = shadowmapFrameBuffer;
+			renderPassBeginInfo.renderArea.offset = {0,0};
+			renderPassBeginInfo.renderArea.extent = extent;
+
+			std::array<VkClearValue, 1> clearColors = {
+				VkClearValue{{1.0f, 0}},
+			};
+
+			VkViewport viewport = {};
+			viewport.x = 0;
+			viewport.y = 0;
+			viewport.width = kShadowMapRes;
+			viewport.height = kShadowMapRes;
+			viewport.minDepth = 0;
+			viewport.maxDepth = 1;	
+
+			renderPassBeginInfo.clearValueCount = clearColors.size();
+			renderPassBeginInfo.pClearValues = &clearColors[0];
+			vkCmdBeginRenderPass(commandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdSetViewport(commandBuffers[i], 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffers[i], 0, 1, &scissor);
+
+			const float depthBiasConstant = 1.25f;
+			const float depthBiasSlope = 1.75f;
+			vkCmdSetDepthBias(commandBuffers[i], depthBiasConstant, 0.0f, depthBiasSlope);
+
+			for(int j = 0; j < customDatas.size(); ++j)
+			{
+				customDatas[j].renderShadowPass(commandBuffers[i]);
+			}
+
+			vkCmdEndRenderPass(commandBuffers[i]);
+		}
+
+
 		VkRenderPassBeginInfo renderPassBeginInfo = {};
 		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassBeginInfo.renderPass = mainRenderPass;
@@ -801,7 +1004,7 @@ void VkForwardRenderer::initCommandBuffer()
 
 void VkForwardRenderer::initCustomData()
 {
-	Model m = {};
+	std::shared_ptr<Model> pM(new Model);
 	std::vector<Model::ModelVertexData> vertexData = 
 	{
 		//{{-10.0f, -10.0f, 10.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 0.0f}},
@@ -833,9 +1036,9 @@ void VkForwardRenderer::initCustomData()
 		//5, 4, 7, 7, 6, 5, // back plane
 	};
 
-	m.SetData(vertexData, indices);
+	pM.get()->SetData(vertexData, indices);
 	VkMaterial skyboxMat = {};
-	skyboxMat.shader = { vulkanInstance.device, "working/subpassForward/forwardSkybox.vert.spv", "working/subpassForward/forwardSkybox.frag.spv" };
+	skyboxMat.pShader = std::shared_ptr<Shader>(new Shader{vulkanInstance.device, "working/subpassForward/forwardSkybox.vert.spv", "working/subpassForward/forwardSkybox.frag.spv" });
 	skyboxMat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/MonValley_G_DirtRoad_8k.jpg");
 	//skyboxMat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/Newport_Loft_8k.jpg");
 	//skyboxMat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/PaperMill_E_8k.jpg");
@@ -843,86 +1046,176 @@ void VkForwardRenderer::initCustomData()
 	
 
 	VkMaterial tmpBRDFMat = {};
-	tmpBRDFMat.shader = { vulkanInstance.device, "working/subpassForward/forwardSkybox.vert.spv", "working/subpassForward/forwardSkybox.frag.spv" };
+	tmpBRDFMat.pShader = std::shared_ptr<Shader>(new Shader{ vulkanInstance.device, "working/subpassForward/forwardSkybox.vert.spv", "working/subpassForward/forwardSkybox.frag.spv" });
 	tmpBRDFMat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/BRDF LUT.png");
 
 
 
 	VkMaterial mat = {};
-	mat.shader = { vulkanInstance.device, "working/subpassForward/forward.vert.spv", "working/subpassForward/forward.frag.spv" };
+	mat.pShader = std::shared_ptr<Shader>(new Shader{ vulkanInstance.device, "working/subpassForward/forward.vert.spv", "working/subpassForward/forward.frag.spv" });
 	mat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/wall.jpg");
-
-	//customDatas = RenderDataUtils::LoadObj("working/model/sponza.obj", mat, commandPool);
-	customDatas = RenderDataUtils::LoadObj("working/model/sponza-gltf-pbr/sponza.glb", mat, commandPool);
 
 	for (int i = 0; i < customDatas.size(); ++i)
 	{
-		customDatas[i].modelMatrix = glm::scale(glm::mat4(1), glm::vec3(0.01f, 0.01f, 0.01f));
 		customDatas[i].buildProgram(vulkanInstance.device, mainRenderPass, 0);
-		customDatas[i].buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView);
+		customDatas[i].buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, shadowPassUniformBufferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView, shadowmapImg.view);
+		// customDatas[i].buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView, shadowmapImg.view);
 	}
-
-
-	VkMaterial sphereMat = {};
-	//sphereMat.shader = { vulkanInstance.device, "working/subpassForward/forward.vert.spv", "working/subpassForward/sphere.frag.spv" };
-	sphereMat.shader = { vulkanInstance.device, "working/subpassForward/forward.vert.spv", "working/subpassForward/forward.frag.spv" };
-	//sphereMat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/Topanga_Forest_B_8k.jpg");
-	//sphereMat.ReadMainTexture(vulkanInstance, commandPool, "working/model/911GT/skin02/0000.BMP");
-	sphereMat.ReadMainTexture(vulkanInstance, commandPool, "working/texture/white.png");
-	//sphereMat.SetSpecularTexture(*vkSys::TexMgr::GetTexture("working/texture/black.png", commandPool));
-	//sphereMat.SetSpecularTexture(*vkSys::TexMgr::GetTexture("working/texture/green.png", commandPool));
-	//sphereMat.SetSpecularTexture(*vkSys::TexMgr::GetTexture("working/texture/tmp.png", commandPool));
-	sphereMat.SetSpecularTexture(*vkSys::TexMgr::GetTexture("working/texture/blue.png", commandPool));
-	sphereMat.matProperty.diffuse = 10.0f;
-
-	//auto nanosuit = RenderDataUtils::LoadObj("working/model/nanosuit/nanosuit.obj", mat, commandPool);
-	VkMaterial gunMat = mat;
-	gunMat.SetTexture(*vkSys::TexMgr::GetTexture("working/model/Cerberus_by_Andrew_Maximov/Textures/Cerberus_A.tga", commandPool));
-	gunMat.SetNormalTexture(*vkSys::TexMgr::GetTexture("working/model/Cerberus_by_Andrew_Maximov/Textures/Cerberus_N.tga", commandPool));
-	gunMat.SetSpecularTexture(*vkSys::TexMgr::GetTexture("working/model/Cerberus_by_Andrew_Maximov/Textures/CerberusCombine.png", commandPool));
-	auto nanosuit = RenderDataUtils::LoadObj("working/model/Cerberus_by_Andrew_Maximov/Cerberus_LP.FBX", mat, commandPool);
-	//auto nanosuit = RenderDataUtils::LoadObj("working/model/dragon.obj", mat, commandPool);
-	//auto nanosuit = RenderDataUtils::LoadObj("model/InfiniteScan/Head.fbx", mat, commandPool);	
-	int begin = customDatas.size();
-	//customDatas.insert(customDatas.end(), nanosuit.begin(), nanosuit.end());
-	for(int i = begin; i < customDatas.size(); ++i)
-	{
-		customDatas[i].modelMatrix = glm::scale(glm::translate(glm::mat4(1), glm::vec3(5.0, 2.0, 0.0)) *  glm::toMat4(glm::quat(glm::radians(glm::vec3(0.0f, 90.0f, 90.0f)))), glm::vec3(0.01f, 0.01f, 0.01f));
-		customDatas[i].setMaterial(gunMat);
-		customDatas[i].buildProgram(vulkanInstance.device, mainRenderPass, 0);	
-		customDatas[i].buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView);
-	}
-
-
-
-	auto sphere = RenderDataUtils::LoadObj("working/model/sphere_.obj", sphereMat, commandPool);
-	//auto sphere = RenderDataUtils::LoadObj("working/model/pokeball/pokeball.obj", sphereMat, commandPool);
-	//auto sphere = RenderDataUtils::LoadObj("working/model/911GT/Porsche_911_GT2.obj", sphereMat, commandPool);
-	//auto sphere = RenderDataUtils::LoadObj("working/model/dragon.obj", sphereMat, commandPool);
-	for (int i = 0; i < sphere.size(); ++i)
-	{
-		sphere[i].modelMatrix = glm::scale(glm::translate(glm::mat4(1), glm::vec3(0.0f, 2.0f, 0.0f)), glm::vec3(0.1, 0.1, 0.1));
-		sphere[i].setMaterial(sphereMat);
-		sphere[i].buildProgram(vulkanInstance.device, mainRenderPass, 0);
-		sphere[i].buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView);
-	}
-	//customDatas.insert(customDatas.end(), sphere.begin(), sphere.end());
 
 
 	// skybox
 	RenderData skyboxRenderData = {};
 	skyboxRenderData.setMaterial(skyboxMat);
-	skyboxRenderData.setModel(m);
+	skyboxRenderData.setModel(pM);
 	skyboxRenderData.buildProgram(vulkanInstance.device, mainRenderPass, 0);
-	skyboxRenderData.buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView);
+	//skyboxRenderData.buildRenderData(vulkanInstance.device, vulkanInstance.deviceMemProps, descriptorPool, globalUniformBfferObj.descriptorBufInfo, shadowPassUniformBufferObj.descriptorBufInfo, skyboxMat.mainTexImageView, tmpBRDFMat.mainTexImageView, shadowmapImg.view);
 	//customDatas.push_back(skyboxRenderData);
 }
+
+
+void VkForwardRenderer::initSceneData()
+{
+	//std::ifstream file("working/scene/scene1.json", std::ios::ate | std::ios::binary);
+	std::ifstream file("working/scene/scene2.json", std::ios::ate | std::ios::binary);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("failed to open file!");
+    }
+
+    size_t 	filesize = (size_t) file.tellg();
+    std::vector<char> buffer(filesize+1);
+    file.seekg(0);
+    file.read(buffer.data(), filesize);
+    file.close();
+	buffer[buffer.size() - 1] = '\0';
+
+	std::string err;
+	sceneJsonData = json11::Json::parse(buffer.data(), err);
+
+
+	
+	materials = {};
+	models = {};
+	//materials
+	{
+		auto jsonMaterials = sceneJsonData["materials"];
+		if (jsonMaterials.is_array())
+		{
+			for (int i = 0; i < jsonMaterials.array_items().size(); ++i)
+			{
+				auto jsonMaterial = jsonMaterials.array_items()[i];
+				std::string name = jsonMaterial["name"].string_value();
+				std::string vertexSdr = jsonMaterial["vertexShader"].string_value();
+				std::string fragmentSdr = jsonMaterial["fragmentShader"].string_value();
+				std::string albedoTex = jsonMaterial["albedo"].is_null() ? "" : jsonMaterial["albedo"].string_value();
+				std::string specularTex = jsonMaterial["specular"].is_null() ? "" : jsonMaterial["specular"].string_value();
+				std::string normalMapTex = jsonMaterial["normalMap"].is_null() ? "" : jsonMaterial["normalMap"].string_value();
+				json11::Json assignment = jsonMaterial["assignment"];
+
+				VkMaterial mat = {};
+
+				mat.pShader = std::shared_ptr<Shader>( new Shader{ vulkanInstance.device, vertexSdr.c_str(), fragmentSdr.c_str() });
+
+				mat.SetTexture(*vkSys::TexMgr::GetTexture(albedoTex.c_str(), commandPool));
+				mat.SetSpecularTexture(*vkSys::TexMgr::GetTexture(specularTex.c_str(), commandPool));
+				mat.SetNormalTexture(*vkSys::TexMgr::GetTexture(normalMapTex.c_str(), commandPool));
+
+				if (!assignment.is_null())
+				{
+					auto items = assignment.object_items();
+					mat.bindingSets.resize(items.size());
+
+					int count = 0;
+					for (auto it = items.begin(); it != items.end(); it++)
+					{
+						mat.bindingSets[count] = { it->first, *vkSys::TexMgr::GetTexture(it->second.string_value().c_str(), commandPool) };
+						count++;
+					}
+
+				}
+
+				materials[name] = mat;
+			}
+		}
+	}
+
+	//mesh
+	{
+		auto jsonMeshs = sceneJsonData["meshs"];
+		if (jsonMeshs.is_array())
+		{
+			for (int i = 0; i < jsonMeshs.array_items().size(); ++i)
+			{
+				auto jsonMesh = jsonMeshs.array_items()[i];
+				std::string name = jsonMesh["name"].string_value();
+				std::string path = jsonMesh["file"].string_value();
+				Model * pModel = new Model();
+				pModel->LoadModel(path.c_str());
+				models[name] = std::shared_ptr<Model>(pModel);
+			}
+		}
+	}
+	
+	//models
+	{
+		auto jsonModels = sceneJsonData["models"];
+		if (jsonModels.is_array())
+		{
+			for (int i = 0; i < jsonModels.array_items().size(); ++i)
+			{
+				auto jsonModel = jsonModels.array_items()[i];
+				bool autoBuild = jsonModel["autoBuild"].is_null() ? false : jsonModel["autoBuild"].bool_value();
+				std::string matName = jsonModel["material"].string_value();
+				auto posJson = jsonModel["pos"].array_items();
+				auto rotJson = jsonModel["rot"].array_items();
+				auto scaleJson = jsonModel["scale"].array_items();
+				auto castShadowJson = jsonModel["castShadow"];
+
+				glm::vec3 pos = glm::vec3(posJson[0].number_value(), posJson[1].number_value(), posJson[2].number_value());
+				glm::vec3 rot = glm::vec3(rotJson[0].number_value(), rotJson[1].number_value(), rotJson[2].number_value());
+				glm::vec3 scale = glm::vec3(scaleJson[0].number_value(), scaleJson[1].number_value(), scaleJson[2].number_value());
+
+				glm::mat4 modelMatrix = glm::scale(glm::translate(glm::mat4(1), pos) *  glm::toMat4(glm::quat(glm::radians(rot))), scale);
+
+				bool castShadow = castShadowJson.is_null() ? true : castShadowJson.bool_value();
+
+				auto & mat = materials[matName];
+				if (autoBuild)
+				{
+					std::string path = jsonModel["meshPath"].string_value();
+					bool bOverrideMat = jsonModel["overrideMat"].is_null() ? true : jsonModel["overrideMat"].bool_value();
+					auto renderDatas = RenderDataUtils::LoadObj(path.c_str(), mat, commandPool);
+					for (int j = 0; j < renderDatas.size(); ++j)
+					{
+						renderDatas[j].modelMatrix = modelMatrix;
+						renderDatas[j].setShadow(castShadow);
+						if (!bOverrideMat) renderDatas[j].setMaterial(mat); // TODO Mat assignment
+					}
+					customDatas.insert(customDatas.end(), renderDatas.begin(), renderDatas.end());
+				}
+				else 
+				{
+					std::string meshName = jsonModel["mesh"].string_value();
+					auto mesh = models[meshName];
+					RenderData rd = {};
+					rd.setMaterial(mat);
+					rd.setModel(mesh);
+					rd.modelMatrix = modelMatrix;
+					customDatas.push_back(rd);
+				}
+			}
+		}
+	}
+}
+
 
 
 void VkForwardRenderer::initCamera()
 {
 	camera = {};
-	camera.transform = {{0, 0, 0},  glm::normalize(glm::quat(glm::radians(glm::vec3{0, 0, 180 })))};
+	rot_y = 6.3;
+	rot_x = 83.5;
+	camera.transform = {{7.44123, 2.30499, -1.06367},  glm::normalize(glm::quat(glm::radians(glm::vec3{rot_y, -rot_x, 0.0 })))};
 }
 
 
@@ -965,17 +1258,35 @@ void VkForwardRenderer::StartRender()
 		{
 			doMovement();
 			doRotate();
+
+			GlobalUniformData shadowPassData = {};
+			//glm::mat4 shadowProjectionMatrix = glm::ortho(-30.0f, 30.0f, -30.0f, 30.0f, 1.0f, 300.0f);
+			glm::mat4 shadowProjectionMatrix = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, 1.0f, 70.0f);
+			auto shadowview = glm::lookAt(-directionalLightDir * 40.0f, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			shadowPassData.vp = shadowProjectionMatrix * shadowview * glm::mat4(1);
+			shadowPassData.shadowVPMatrix = shadowPassData.vp;
+			CopyDataToDeviceMemory(vulkanInstance.device, shadowPassUniformBufferObj.memory, shadowPassUniformBufferObj.size, &shadowPassData);
+
+
+
         	camera.transform.UpdateMatrix();
 			glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), (GLfloat)windowData.swapChainExtent.width / (GLfloat)windowData.swapChainExtent.height, 0.001f, 1000.0f);
+			projectionMatrix[1][1] *= -1.0f;
 			glm::vec3 scale = {0.01f, 0.01f, 0.01f};
 			globalUniformData.cameraPos = {camera.transform.position.x, camera.transform.position.y, camera.transform.position.z, 0.0};
-			globalUniformData.mvp = projectionMatrix * camera.GetViewMatrix() * glm::scale(glm::mat4(1), scale);
-			globalUniformData.vp = projectionMatrix * camera.GetViewMatrix();
+			auto view = glm::lookAt(glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(0.0f, 2.0f, 3.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			view = camera.GetViewMatrix();
+			globalUniformData.mvp = projectionMatrix * view * glm::scale(glm::mat4(1), scale);
+			globalUniformData.vp = projectionMatrix * view;
 			globalUniformData.projectionMatrix = projectionMatrix;
 			globalUniformData.worldToCamMatrix = camera.transform.modelMatrix;
-			globalUniformData.worldToCamMatrix = camera.GetViewMatrix();
-			globalUniformData.directionalLightDir = glm::vec4(1, -1, 1, 1);
+			globalUniformData.worldToCamMatrix = view;
+			globalUniformData.directionalLightDir = glm::make_vec4(directionalLightDir);
 			globalUniformData.directionalLightColor = glm::vec4(1, 1, 1, 1);
+			globalUniformData.directionalLightColor = glm::vec4(255.0f / 255.0f, 228.0f / 255.0f, 206.0f / 255.0f, 1);
+			globalUniformData.shadowVPMatrix = shadowPassData.vp;
+			globalUniformData.floatArrs[0] = currentFrame;
 			CopyDataToDeviceMemory(vulkanInstance.device, globalUniformBfferObj.memory, globalUniformBfferObj.size, &globalUniformData);
 		}
 

@@ -12,10 +12,14 @@ add_library(Renderer
 			Model.h Model.cpp
 			VkMaterial.h VkMaterial.cpp
 			#stb_image.h 
+			json11.hpp json11.cpp
+			cgltf.h
 			vkSys.h vkSys.cpp
+			mikktspace.h mikktspace.c
 			RenderData.h RenderData.cpp
 			)
 target_link_libraries(Renderer math)
+target_link_libraries(Renderer spirv-reflect)
 target_link_libraries(Renderer VulkanLib)
 target_link_libraries(Renderer glm)
 target_link_libraries(Renderer assimp)

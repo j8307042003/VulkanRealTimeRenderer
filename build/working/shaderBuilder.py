@@ -15,6 +15,7 @@ def BuildShaderFile(shaderBuilder, sourceFilePath, outputFileName):
 	workingDir = str(pathlib.Path(sourceFilePath).parent)
 	os.chdir(workingDir)
 	outputPath = os.path.join(workingDir, outputFileName);
+	# result = os.system(shaderBuilder + " " + sourceFilePath + " -o " + outputPath + " -O")
 	result = os.system(shaderBuilder + " " + sourceFilePath + " -o " + outputPath)
 	
 	os.chdir(cwd)

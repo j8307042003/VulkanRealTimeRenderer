@@ -9,7 +9,8 @@ layout(location = 2) in vec3 worldPos;
 layout(location = 3) in vec3 worldNormal;
 layout(location = 4) in vec3 tangent;
 layout(location = 5) in vec3 bitangent;
-layout(location = 6) in mat3 tangentToWorld;
+// layout(location = 6) in mat3 tangentToWorld;
+layout(location = 6) in vec4 shadowmapPos;
 
 layout(location = 0) out vec4 outColor;
 
@@ -36,6 +37,7 @@ layout(binding = 2) uniform sampler2D mainTex;
 layout(binding = 3) uniform sampler2D specTex;
 layout(binding = 4) uniform sampler2D normalTex;
 layout(binding = 5) uniform sampler2D GISkybox;
+layout(binding = 7) uniform sampler2D ShadowmapTexture;
 
 vec3 basicLit(vec3 normal, vec3 lightdir, vec3 lightcolor, vec3 viewdir, vec3 color)
 {
@@ -74,7 +76,6 @@ void main() {
 	vec3 reflectdir = reflect(-viewdir, normalize(worldNormal));
 	//vec4 gicolor = texture(GISkybox, SampleSphericalMap(reflectdir));
 	vec2 uv = SampleSphericalMap(reflectdir);
-	uv.x = 1 - uv.x;
 	vec4 gicolor = sampleGI(uv, 0.2);
 	float metallic = 1.0;
 	//color.rgb = mix(vec3(1), color.rgb, 1.0) * gicolor.rgb * 1.0;

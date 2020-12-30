@@ -1,8 +1,7 @@
 
 
-# My WIP toy path tracing renderer accelerated via gpu.
+# Real-time Vulkan renderer (WIP).
 
-using vulkan compute shader to compute each pixel's color( ray tracing, shading, sample integrator).
 
 
 ## Requirement
@@ -33,13 +32,7 @@ cmake --build .
 
 ### Usage
 
-#### compile path tracing compute shader
-```bash
-YOUR_VULKAN_SDK_Path/glslc pathTracing.comp -O pathTracing.spv
-```
+#### shader compiler tool
+execute python script under build/working/shaderBuilder.py
 
-#### add model to the scene. 
-```c++	
-//TestScene1.h
-scene.AddModel("dragon.obj", "s1", 1); // put model file in working folder and add model.
-```
+

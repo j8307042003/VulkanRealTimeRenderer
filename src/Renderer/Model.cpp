@@ -16,7 +16,7 @@ void Model::LoadModel(const char * filename)
 {
 	aiPropertyStore * props = aiCreatePropertyStore();
 	//auto scene = aiImportFileExWithProperties(filename, aiProcess_Triangulate, NULL, props);
-	auto scene = aiImportFileExWithProperties(filename, aiProcessPreset_TargetRealtime_Fast, NULL, props);
+	auto scene = aiImportFileExWithProperties(filename, aiProcess_FlipWindingOrder | aiProcessPreset_TargetRealtime_Fast, NULL, props);
 
 	if (scene)
 	{
@@ -59,8 +59,10 @@ void Model::LoadModel(const char * filename)
 			{
 				auto vertice = pMesh->mVertices[j];
 				auto normal = pMesh->mNormals[j];
+				auto tangent = pMesh->mTangents[j];
+				auto bitangent = pMesh->mBitangents[j];
 				aiVector3D * coords = &pMesh->mTextureCoords[0][j];
-				data[vertexNum] = { {vertice.x, vertice.y, vertice.z}, {coords->x, coords->y}, {0, 0, 0, 0}, {normal.x, normal.y, normal.z} }; // vertex, uv, color
+				data[vertexNum] = { {vertice.x, vertice.y, vertice.z}, {coords->x, coords->y}, {0, 0, 0, 0}, {normal.x, normal.y, normal.z}, glm::make_vec3(&tangent.x), glm::make_vec3(&bitangent.x) }; // vertex, uv, color
 				//data[vertexNum] = { {vertice.x, vertice.y, vertice.z}, {0, 0}, {0, 0, 0, 0} }; // vertex, uv, color
 				vertexNum++;
 			}

@@ -1,0 +1,31 @@
+﻿  context.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  init.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  input.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  monitor.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  vulkan.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  window.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  win32_init.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  win32_joystick.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  win32_monitor.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  win32_time.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  win32_thread.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  win32_window.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  wgl_context.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  egl_context.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  osmesa_context.c
+d:\programming\c++\graphic\vulkanrenderer\src\glfw\src\internal.h(193): fatal error C1189: #error:  "No supported window creation API selected"
+  Generating Code...

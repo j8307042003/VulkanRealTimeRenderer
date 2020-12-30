@@ -6,6 +6,8 @@
 #ifndef VK_MATERIAL_HEADER
 #define VK_MATERIAL_HEADER
 #include "vkSys.h"
+
+#include <memory>
  
 
 class VkMaterial;
@@ -34,8 +36,15 @@ public:
 		glm::vec3 specularColor;
 	};
 
+	struct MatBindingAssignmentSet
+	{
+		std::string name;
+		vkSys::TexMgr::Texture image;
+	};
+
+
 	MatProperty matProperty;
-	Shader shader;	
+	std::shared_ptr<Shader> pShader;	
 
 	VkImage mainTexImg;
 	VkImageView mainTexImageView;
@@ -47,6 +56,9 @@ public:
 	VkImage normalTexImg;
 	VkImageView normalTexImageView;
 
+	std::vector<MatBindingAssignmentSet> bindingSets = {};
+
+
 	void ReadMainTexture(const VulkanLib::VulkanInstance & vulkanInstance, const VkCommandPool & commandPool, const char * fileName);
 	void SetTexture(vkSys::TexMgr::Texture texture);
 	void SetSpecularTexture(vkSys::TexMgr::Texture texture);
@@ -54,5 +66,12 @@ public:
 };
 
 
-VkMaterialProgram vkMatBuildProgram(const VkMaterial & mat, VkDevice device, VkRenderPass renderpass, int subpass, const VkPipelineVertexInputStateCreateInfo * vertexInputInfo);
+VkMaterialProgram vkMatBuildProgram(const VkMaterial & mat, VkDevice device, VkRenderPass renderpass, int subpass, 
+									const VkPipelineVertexInputStateCreateInfo * vertexInputInfo,
+									int numDescriptorSetLayoutBinding,
+									VkDescriptorSetLayoutBinding * descriptorSetLayoutBindings);
+VkMaterialProgram vkMatBuildShadowProgram(const VkMaterial & mat, VkDevice device, VkRenderPass renderpass, int subpass, 
+									const VkPipelineVertexInputStateCreateInfo * vertexInputInfo,
+									int numDescriptorSetLayoutBinding,
+									VkDescriptorSetLayoutBinding * descriptorSetLayoutBindings);
 #endif // !VK_MATERIAL_HEADER

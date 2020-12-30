@@ -198,6 +198,21 @@ VkShaderModule createShaderModule(VkDevice & device, const int & codeLen, const 
 	return shaderModule;
 }
 
+void LoadFile(const char * filename, std::vector<char> & code)
+{
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("failed to open file!");
+    }
+
+    size_t 	filesize = (size_t) file.tellg();
+    code.resize(filesize);
+    file.seekg(0);
+    file.read(code.data(), filesize);
+    file.close();
+}
+
 
 VkShaderModule createShaderModule(VkDevice & device, std::string & filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);

@@ -36,6 +36,7 @@ endif()
 add_subdirectory(src/BVH src/BVH/build)
 add_subdirectory(src/VulkanLib src/VulkanLib/build)
 add_subdirectory(src/Renderer src/Renderer/build)
+add_subdirectory(src/SPIRV-Reflect src/SPIRV-Reflect/build)
 
 
 include_directories(src/glad)
@@ -51,6 +52,7 @@ include_directories(src/assimp/include)
 project(App)
 
 add_executable(App src/main.cpp)
+#target_link_libraries(App spirv-reflect)
 target_link_libraries(App Renderer)
 target_link_libraries(App math)
 target_link_libraries(App BVH)
