@@ -1075,8 +1075,8 @@ void VkForwardRenderer::initCustomData()
 
 void VkForwardRenderer::initSceneData()
 {
-	//std::ifstream file("working/scene/scene1.json", std::ios::ate | std::ios::binary);
-	std::ifstream file("working/scene/scene2.json", std::ios::ate | std::ios::binary);
+	std::ifstream file("working/scene/scene1.json", std::ios::ate | std::ios::binary);
+	//std::ifstream file("working/scene/scene2.json", std::ios::ate | std::ios::binary);
 
     if (!file.is_open()) {
         throw std::runtime_error("failed to open file!");

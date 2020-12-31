@@ -3,6 +3,10 @@
 #include <cassert>
 #include <cstddef>
 
+// TODO: proper define
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_RADIANS
+
 #define GLM_VERSION_MAJOR			0
 #define GLM_VERSION_MINOR			9
 #define GLM_VERSION_PATCH			9
