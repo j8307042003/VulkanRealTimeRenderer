@@ -103,13 +103,11 @@ vec3 fresnelSchlickRoughnessDisney(vec3 normal, vec3 lightdir, vec3 viewdir, vec
 
 vec3 ApproximateSpecularIBL(sampler2D GISource, sampler2D BRDFLUTTexture, vec3 SpecularColor , float Roughness, vec3 N, vec3 V )
 {
-	float NoV = 1.0 - clamp( dot( N, V ), 0, 1 );
-	vec3 R = 2 * dot( V, N ) * N - V;
+	float NoV = clamp( dot( N, V ), 0, 1 );
+	vec3 R = reflect(-V, N);
 	vec3 PrefilteredColor = PrefilterEnvMap(GISource, Roughness, R );
-	vec2 EnvBRDF = fromLinear(texture(BRDFLUTTexture, vec2(Roughness, NoV))).rg;
-	//vec2 EnvBRDF = (texture(BRDFLUTTexture, vec2(Roughness, NoV))).rg;
+	vec2 EnvBRDF = (texture(BRDFLUTTexture, vec2(NoV, 1.0 - Roughness))).rg;
 	return PrefilteredColor * ( SpecularColor * EnvBRDF.x + EnvBRDF.y );
-	//return PrefilteredColor * ( SpecularColor);
 }
 
 float V_Kelemen(float LoH) {
@@ -183,7 +181,7 @@ vec3 brdf_light(BrdfInput brdfInput)
 
 	vec3 specular = min(vec3(1.0), max(D * F * G * 1.0, vec3(0.0)));
 	//specular = G > 2.0 ? vec3(1.0) : vec3(0.0);
-	vec3 diffuse = albedo * Fd_Burley(NoV, NoL, LoH, roughness);
+	vec3 diffuse = albedo * min(1.0, Fd_Burley(NoV, NoL, LoH, roughness));
 	return (diffuse + specular) * brdfInput.lightColor * (1.0 - clamp(brdfInput.shadowMask, 0.0, 1.0));
 }
 
@@ -200,8 +198,7 @@ vec3 brdf_IBL(BrdfInput brdfInput, sampler2D GISource, sampler2D BRDFLUTTexture)
 	vec3 f0 = mix(vec3(0.04), specularColor, metallic);
 	f0 = fresnelSchlickRoughness(max(0, dot(viewdir, normal)), f0, roughness);
 	vec3 specular = ApproximateSpecularIBL(GISource, BRDFLUTTexture, f0, roughness, normal, viewdir);
-	vec3 diffuse = PrefilterEnvMap(GISource, 0.9, normal) * albedo * (1 - metallic);	
-
+	vec3 diffuse = PrefilterEnvMap(GISource, 0.9, normal) * albedo * (1 - metallic) * (1.0 - f0);	
 	return diffuse + specular;
 }
 
@@ -237,7 +234,7 @@ vec3 brdf(sampler2D GISource, sampler2D BRDFLUTTexture, BrdfInput brdfInput)
 
 
     // clear coat BRDF
-    float  Fc = fresnelSchlickRoughness(NoV, f0, clearCoatRoughness).r * clearCoat; // clear coat strength
+    float  Fc = fresnelSchlickRoughness(NoV, vec3(0.04), clearCoatRoughness).r * clearCoat; // clear coat strength
 	vec3 clearCoatspecular = ApproximateSpecularIBL(GISource, BRDFLUTTexture, vec3(0.04), clearCoatRoughness, normal, viewdir);
 
 

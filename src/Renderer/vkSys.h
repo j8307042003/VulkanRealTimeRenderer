@@ -31,6 +31,7 @@ namespace vkSys {
 	};
 
 	static const uint32_t Sampler2D = 1;
+	static const uint32_t Sampler2D_ClampEdge = 2;
 	static const uint32_t SamplerMax = 10;
 	/*	
 	enum SamplerKind 
@@ -47,6 +48,7 @@ namespace vkSys {
 
 		static VkSampler GetSampler(uint32_t samplerKind, int mipmaps);
 		static VkSampler Create2DSampler(int mipmaps);
+		static VkSampler Create2DClampEdgeSampler(int mipmaps);
 	};
 
 

@@ -654,12 +654,13 @@ void RenderData::buildRenderData(VkDevice & device, const VkPhysicalDeviceMemory
 	CopyDataToDeviceMemory(device, indicesBufferObj.memory, indicesBufferObj.size, pModel.get()->indices.data());
 	CopyDataToDeviceMemory(device, customUboBufferObj.memory, customUboBufferObj.size, &mat.matProperty);
 
-    VkSampler sampler = vkSys::Sampler::GetSampler(vkSys::Sampler2D, mat.mipmapsLevel);
+	VkSampler sampler = vkSys::Sampler::GetSampler(vkSys::Sampler2D, mat.mipmapsLevel);
+	VkSampler sampler_clampEdge = vkSys::Sampler::GetSampler(vkSys::Sampler2D_ClampEdge, mat.mipmapsLevel);
 	VkDescriptorImageInfo mainTexDescriptorImgInfo = createDescriptorImageInfo(sampler, mat.mainTexImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	VkDescriptorImageInfo specTexDescriptorImgInfo = createDescriptorImageInfo(sampler, mat.specImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	VkDescriptorImageInfo normalTexDescriptorImgInfo = createDescriptorImageInfo(sampler, mat.normalTexImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	VkDescriptorImageInfo GIImgBufInfo = createDescriptorImageInfo(sampler, GIImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	VkDescriptorImageInfo BRDFLUTImgBufInfo = createDescriptorImageInfo(sampler, BRDFLUTImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	VkDescriptorImageInfo BRDFLUTImgBufInfo = createDescriptorImageInfo(sampler_clampEdge, BRDFLUTImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	VkDescriptorImageInfo ShadowmapImgBufInfo = createDescriptorImageInfo(sampler, shadowmapImgView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 

@@ -79,7 +79,7 @@ void main() {
 
 	vec4 pbrParam = texture(paramTex, uvNor);
 	float roughness = pbrParam.g;
-	roughness = 1.0;
+	roughness = 0.1;
 	float metallic = pbrParam.b;
 	vec3 viewdir = normalize(ubo.cameraPos.xyz - worldPos);
 
@@ -100,7 +100,7 @@ void main() {
 	brdfData.normal = normal;
 	brdfData.viewdir = viewdir;
 	brdfData.lightdir = -ubo.directionalLightDir.xyz;
-	brdfData.clearCoat = 0.5;
+	brdfData.clearCoat = 0.99;
 	brdfData.clearCoatRoughness = 0.1;	
 	brdfData.lightColor = ubo.directionalLightColor.rgb;
 	brdfData.shadowMask = shadow;
